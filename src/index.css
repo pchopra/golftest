@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  --color-golf-900: #14532d;
+  --color-golf-800: #166534;
+  --color-golf-700: #15803d;
+  --color-golf-600: #16a34a;
+  --color-golf-500: #22c55e;
+  --color-golf-400: #4ade80;
+  --color-golf-300: #86efac;
+  --color-golf-200: #bbf7d0;
+  --color-golf-100: #dcfce7;
+  --color-golf-50: #f0fdf4;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #f8faf9;
+}
+
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes fill-progress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out forwards;
+}
+
+.animate-fill {
+  animation: fill-progress 3s ease-out forwards;
+}
+
+.animate-pulse-green {
+  animation: pulse-green 2s ease-in-out infinite;
+}
