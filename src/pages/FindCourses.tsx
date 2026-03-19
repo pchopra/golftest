@@ -1,11 +1,14 @@
-import { useState, useMemo, useEffect } from 'react';
-import { MapPin, SlidersHorizontal } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { MapPin, SlidersHorizontal, Search, Flame, Calendar } from 'lucide-react';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { mockCourses, type GolfCourse } from '../data/mockCourses';
+import { hotDeals } from '../data/hotDeals';
+import { getCoordinatesForZip } from '../data/zipCoordinates';
 import { getDistanceMiles } from '../utils/distance';
 import CourseCard from '../components/CourseCard';
 import CourseDetailSheet from '../components/CourseDetailSheet';
 import LocationPrompt from '../components/LocationPrompt';
+import HotDealCard from '../components/HotDealCard';
 
 type SortMode = 'nearest' | 'top-rated' | 'best-value';
 
@@ -13,20 +16,46 @@ export default function FindCourses() {
   const { latitude, longitude, loading, error, granted, requestLocation } = useGeolocation();
   const [sortMode, setSortMode] = useState<SortMode>('nearest');
   const [selectedCourse, setSelectedCourse] = useState<GolfCourse | null>(null);
+  const [zipCode, setZipCode] = useState('');
+  const [zipCoords, setZipCoords] = useState<{ lat: number; lng: number; city: string } | null>(null);
+  const [zipError, setZipError] = useState('');
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    return d.toISOString().split('T')[0];
+  });
 
   useEffect(() => {
     requestLocation();
   }, [requestLocation]);
 
+  // The effective lat/lng — zip code overrides geolocation
+  const effectiveLat = zipCoords?.lat ?? latitude;
+  const effectiveLng = zipCoords?.lng ?? longitude;
+
+  const handleZipSearch = useCallback(() => {
+    if (zipCode.length !== 5 || !/^\d{5}$/.test(zipCode)) {
+      setZipError('Enter a valid 5-digit zip code');
+      return;
+    }
+    const coords = getCoordinatesForZip(zipCode);
+    if (coords) {
+      setZipCoords(coords);
+      setZipError('');
+    } else {
+      setZipError('Zip code not found. Try a Bay Area or major city zip.');
+      setZipCoords(null);
+    }
+  }, [zipCode]);
+
   const coursesWithDistance = useMemo(() => {
     return mockCourses.map((course) => ({
       course,
       distance:
-        latitude && longitude
-          ? getDistanceMiles(latitude, longitude, course.lat, course.lng)
+        effectiveLat && effectiveLng
+          ? getDistanceMiles(effectiveLat, effectiveLng, course.lat, course.lng)
           : null,
     }));
-  }, [latitude, longitude]);
+  }, [effectiveLat, effectiveLng]);
 
   const sortedCourses = useMemo(() => {
     const sorted = [...coursesWithDistance];
@@ -46,34 +75,120 @@ export default function FindCourses() {
     return sorted;
   }, [coursesWithDistance, sortMode]);
 
+  // Filter hot deals by selected date's day of week, sorted by distance
+  const activeDeals = useMemo(() => {
+    const date = new Date(selectedDate + 'T12:00:00');
+    const dayOfWeek = date.getDay();
+    const filtered = hotDeals.filter((deal) => deal.validDays.includes(dayOfWeek));
+
+    if (effectiveLat && effectiveLng) {
+      filtered.sort((a, b) => {
+        const distA = getDistanceMiles(effectiveLat!, effectiveLng!, a.lat, a.lng);
+        const distB = getDistanceMiles(effectiveLat!, effectiveLng!, b.lat, b.lng);
+        return distA - distB;
+      });
+    }
+    return filtered;
+  }, [selectedDate, effectiveLat, effectiveLng]);
+
   const selectedDistance = selectedCourse
     ? coursesWithDistance.find((c) => c.course.id === selectedCourse.id)?.distance ?? null
     : null;
+
+  const locationLabel = zipCoords
+    ? `Showing courses near ${zipCoords.city}`
+    : granted && latitude
+    ? error
+      ? 'Showing Bay Area courses'
+      : 'Courses near your location'
+    : 'Discover nearby golf courses';
 
   return (
     <div className="min-h-screen pb-24">
       {/* Header */}
       <div className="bg-gradient-to-br from-golf-800 to-golf-600 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-6 rounded-b-3xl">
         <h1 className="text-2xl font-bold text-white mt-2">Find Courses</h1>
-        <p className="text-golf-200 text-sm mt-1">
-          {granted && latitude
-            ? error
-              ? 'Showing Bay Area courses'
-              : 'Courses near your location'
-            : 'Discover nearby golf courses'}
-        </p>
+        <p className="text-golf-200 text-sm mt-1">{locationLabel}</p>
+
+        {/* Zip Code Search */}
+        <div className="mt-4 flex gap-2">
+          <div className="flex-1 relative">
+            <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-golf-300" />
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={5}
+              placeholder="Enter zip code"
+              value={zipCode}
+              onChange={(e) => {
+                setZipCode(e.target.value.replace(/\D/g, ''));
+                setZipError('');
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && handleZipSearch()}
+              className="w-full pl-9 pr-3 py-2.5 bg-white/15 text-white placeholder-golf-300 text-sm rounded-xl border border-white/20 focus:outline-none focus:border-white/50 focus:bg-white/20"
+            />
+          </div>
+          <button
+            onClick={handleZipSearch}
+            className="px-4 py-2.5 bg-white text-golf-800 text-sm font-semibold rounded-xl hover:bg-golf-50 transition-colors flex items-center gap-1.5"
+          >
+            <Search size={16} />
+            Search
+          </button>
+        </div>
+        {zipError && (
+          <p className="text-red-300 text-xs mt-1.5 pl-1">{zipError}</p>
+        )}
       </div>
 
-      {/* Location prompt or status */}
+      {/* Location prompt */}
       <div className="mt-4">
-        {!granted ? (
+        {!granted && !zipCoords ? (
           <LocationPrompt onRequest={requestLocation} loading={loading} />
-        ) : error ? (
+        ) : error && !zipCoords ? (
           <div className="mx-4 mb-3 flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-4 py-2.5 rounded-xl">
             <MapPin size={16} />
             {error}
           </div>
         ) : null}
+      </div>
+
+      {/* Hot Deals Section */}
+      <div className="mt-2 mb-4">
+        <div className="px-4 flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Flame size={18} className="text-red-500" />
+            <h2 className="text-sm font-bold text-gray-900">Hot Tee Time Deals</h2>
+          </div>
+          <div className="relative flex items-center gap-1.5">
+            <Calendar size={14} className="text-gray-400" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="text-xs text-golf-700 font-semibold bg-golf-50 border border-golf-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-golf-400"
+            />
+          </div>
+        </div>
+
+        {activeDeals.length > 0 ? (
+          <div className="flex gap-3 px-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide">
+            {activeDeals.map((deal) => {
+              const dist =
+                effectiveLat && effectiveLng
+                  ? getDistanceMiles(effectiveLat, effectiveLng, deal.lat, deal.lng)
+                  : null;
+              return <HotDealCard key={deal.id} deal={deal} distance={dist} />;
+            })}
+          </div>
+        ) : (
+          <div className="mx-4 bg-gray-50 rounded-2xl p-6 flex flex-col items-center">
+            <Flame size={24} className="text-gray-300 mb-2" />
+            <p className="text-sm text-gray-500 text-center">
+              No hot deals available for this date. Try another day!
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Sort controls */}

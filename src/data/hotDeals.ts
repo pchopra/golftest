@@ -1,0 +1,148 @@
+export interface HotDeal {
+  id: string;
+  courseId: string;
+  courseName: string;
+  city: string;
+  state: string;
+  lat: number;
+  lng: number;
+  originalPrice: number;
+  dealPrice: number;
+  teeTime: string;
+  holes: number;
+  includesCart: boolean;
+  validDays: number[]; // 0=Sun, 1=Mon, etc.
+  imageGradient: string;
+}
+
+// Mock hot deals — validDays controls which days of the week the deal is active
+export const hotDeals: HotDeal[] = [
+  {
+    id: 'deal-1',
+    courseId: '10',
+    courseName: 'Tilden Park Golf Course',
+    city: 'Berkeley',
+    state: 'CA',
+    lat: 37.8947,
+    lng: -122.2453,
+    originalPrice: 52,
+    dealPrice: 29,
+    teeTime: '7:30 AM',
+    holes: 18,
+    includesCart: true,
+    validDays: [0, 1, 2, 3, 4, 5, 6],
+    imageGradient: 'from-amber-600 to-green-600',
+  },
+  {
+    id: 'deal-2',
+    courseId: '7',
+    courseName: 'Lincoln Park Golf Course',
+    city: 'San Francisco',
+    state: 'CA',
+    lat: 37.7867,
+    lng: -122.5020,
+    originalPrice: 45,
+    dealPrice: 25,
+    teeTime: '11:00 AM',
+    holes: 18,
+    includesCart: false,
+    validDays: [1, 2, 3, 4, 5],
+    imageGradient: 'from-orange-500 to-green-600',
+  },
+  {
+    id: 'deal-3',
+    courseId: '3',
+    courseName: 'Presidio Golf Course',
+    city: 'San Francisco',
+    state: 'CA',
+    lat: 37.7886,
+    lng: -122.4598,
+    originalPrice: 105,
+    dealPrice: 69,
+    teeTime: '1:30 PM',
+    holes: 18,
+    includesCart: true,
+    validDays: [1, 2, 3, 4],
+    imageGradient: 'from-emerald-700 to-green-500',
+  },
+  {
+    id: 'deal-4',
+    courseId: '11',
+    courseName: 'Corica Park (South)',
+    city: 'Alameda',
+    state: 'CA',
+    lat: 37.7410,
+    lng: -122.2476,
+    originalPrice: 78,
+    dealPrice: 45,
+    teeTime: '9:00 AM',
+    holes: 18,
+    includesCart: true,
+    validDays: [0, 1, 2, 3, 4, 5, 6],
+    imageGradient: 'from-teal-600 to-green-500',
+  },
+  {
+    id: 'deal-5',
+    courseId: '12',
+    courseName: 'Sharp Park Golf Course',
+    city: 'Pacifica',
+    state: 'CA',
+    lat: 37.6267,
+    lng: -122.4873,
+    originalPrice: 48,
+    dealPrice: 22,
+    teeTime: '2:00 PM',
+    holes: 18,
+    includesCart: false,
+    validDays: [0, 5, 6],
+    imageGradient: 'from-indigo-600 to-green-600',
+  },
+  {
+    id: 'deal-6',
+    courseId: '14',
+    courseName: 'Crystal Springs Golf Course',
+    city: 'Burlingame',
+    state: 'CA',
+    lat: 37.5180,
+    lng: -122.3535,
+    originalPrice: 85,
+    dealPrice: 49,
+    teeTime: '10:30 AM',
+    holes: 18,
+    includesCart: true,
+    validDays: [1, 2, 3],
+    imageGradient: 'from-violet-600 to-green-600',
+  },
+  {
+    id: 'deal-7',
+    courseId: '2',
+    courseName: 'TPC Harding Park',
+    city: 'San Francisco',
+    state: 'CA',
+    lat: 37.7271,
+    lng: -122.4937,
+    originalPrice: 185,
+    dealPrice: 119,
+    teeTime: '3:00 PM',
+    holes: 18,
+    includesCart: true,
+    validDays: [0, 4, 5, 6],
+    imageGradient: 'from-green-800 to-emerald-600',
+  },
+  {
+    id: 'deal-8',
+    courseId: '4',
+    courseName: 'Half Moon Bay Golf Links',
+    city: 'Half Moon Bay',
+    state: 'CA',
+    lat: 37.4346,
+    lng: -122.4428,
+    originalPrice: 195,
+    dealPrice: 129,
+    teeTime: '12:00 PM',
+    holes: 18,
+    includesCart: true,
+    validDays: [2, 3, 4],
+    imageGradient: 'from-cyan-700 to-green-600',
+  },
+];
