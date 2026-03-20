@@ -42,7 +42,7 @@ export default function FindCourses() {
       setZipCoords(coords);
       setZipError('');
     } else {
-      setZipError('Zip code not found. Try a Bay Area or major city zip.');
+      setZipError('Invalid zip code. Please enter a valid US zip code.');
       setZipCoords(null);
     }
   }, [zipCode]);

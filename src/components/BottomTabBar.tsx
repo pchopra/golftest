@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { MapPin, Video, Users, UserCircle } from 'lucide-react';
+import { Home, MapPin, Video, Users, UserCircle } from 'lucide-react';
 
 const tabs = [
-  { to: '/', label: 'Find Courses', icon: MapPin },
-  { to: '/buddy', label: "Let'sPlayBuddy", icon: Users },
-  { to: '/swing', label: 'Swing Coach', icon: Video },
+  { to: '/', label: 'Home', icon: Home },
+  { to: '/courses', label: 'Courses', icon: MapPin },
+  { to: '/buddy', label: "Buddy", icon: Users },
+  { to: '/swing', label: 'Swing', icon: Video },
   { to: '/login', label: 'Account', icon: UserCircle },
 ];
 
@@ -16,6 +17,7 @@ export default function BottomTabBar() {
           <NavLink
             key={to}
             to={to}
+            end={to === '/'}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center py-2 pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] transition-colors ${
                 isActive ? 'text-golf-700' : 'text-gray-400'
