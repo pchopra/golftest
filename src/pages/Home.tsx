@@ -361,12 +361,10 @@ export default function Home() {
               Live tournaments, AI swing coaching, GPS range finder, tee time deals, equipment savings, junior programs, and a community of players — all in your pocket.
             </p>
 
-            <div className="flex items-center justify-center gap-3 mt-5">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-amber-400/40" />
+            <div className="mt-5 text-center">
               <span className="text-xs font-extrabold tracking-[0.2em] uppercase text-amber-300">
                 Download-free and always up to date
               </span>
-              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-400/40" />
             </div>
 
             <p className="text-center mt-4 text-gray-400 text-[11px] font-semibold tracking-widest uppercase">
