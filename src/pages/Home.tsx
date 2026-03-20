@@ -349,40 +349,28 @@ export default function Home() {
 
       {/* Bottom tagline */}
       <div className="px-4 py-8">
-        <div
-          className="relative overflow-hidden rounded-2xl shadow-xl"
-          style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #0d9488 100%)" }}
-        >
-          {/* Decorative golf ball pattern */}
-          <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full border-[3px] border-white/10" />
-          <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full border-[3px] border-white/10" />
-          <div className="absolute top-3 left-4 w-2 h-2 rounded-full bg-white/15" />
-          <div className="absolute bottom-4 right-8 w-2 h-2 rounded-full bg-white/15" />
+        <div className="relative overflow-hidden rounded-2xl shadow-2xl bg-white">
+          {/* Top accent bar */}
+          <div className="h-1.5 bg-gradient-to-r from-emerald-500 via-green-400 to-teal-500" />
 
-          <div className="relative z-10 p-6">
-            <p
-              className="text-base text-white font-bold leading-relaxed tracking-wide text-center"
-              style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
-            >
-              From <span className="text-amber-300">tee time deals</span> to{" "}
-              <span className="text-emerald-300">real-time leaderboards</span>,{" "}
-              <span className="text-sky-300">swing analysis</span> to{" "}
-              <span className="text-pink-300">junior coaching</span> —
+          {/* Background pattern */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle, #000 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
+
+          <div className="relative z-10 px-6 py-7">
+            <p className="text-gray-800 text-base font-bold leading-7 text-center tracking-wide" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
+              From tee time deals to real-time leaderboards, swing analysis to junior coaching — GolfBuddy brings the entire golf world to your fingertips.
             </p>
-            <p
-              className="text-lg text-white font-extrabold leading-relaxed tracking-wide text-center mt-2"
-              style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
-            >
-              GolfBuddy brings the{" "}
-              <span className="underline decoration-amber-400 decoration-2 underline-offset-4">
-                entire golf world
-              </span>{" "}
-              to your fingertips.
-            </p>
-            <p className="text-center mt-3">
-              <span className="inline-block bg-white/15 backdrop-blur-sm text-emerald-200 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full border border-white/20">
-                Always Updated &bull; Powered by AI
+
+            <div className="flex items-center justify-center gap-3 mt-5">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-gray-300" />
+              <span className="text-xs font-extrabold tracking-[0.2em] uppercase text-golf-700">
+                100% Free &bull; No Download Required
               </span>
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-gray-300" />
+            </div>
+
+            <p className="text-center mt-4 text-gray-500 text-xs font-semibold tracking-wider uppercase">
+              Always Updated &bull; Powered by AI
             </p>
           </div>
         </div>
