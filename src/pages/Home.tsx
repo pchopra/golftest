@@ -358,7 +358,7 @@ export default function Home() {
               One app. Every golfer's dream.
             </p>
             <p className="text-sm text-gray-300 font-medium leading-6 text-center mt-3">
-              Live tournaments, AI swing coaching, GPS range finder, tee time deals, equipment savings, junior programs, and a community of players — all in your pocket. Download-free and always up to date.
+              Live tournaments, AI swing coaching, GPS range finder, tee time deals, equipment savings, junior programs, and a community of players — all in your pocket.
             </p>
 
             <div className="flex items-center justify-center gap-3 mt-5">
