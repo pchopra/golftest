@@ -11,7 +11,7 @@ const tabs = [
 
 export default function BottomTabBar() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-green-900 z-50">
       <div className="max-w-md mx-auto flex">
         {tabs.map(({ to, label, icon: Icon }) => (
           <NavLink
@@ -20,14 +20,20 @@ export default function BottomTabBar() {
             end={to === '/'}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center py-2 pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] transition-colors ${
-                isActive ? 'text-golf-700' : 'text-gray-400'
+                label === 'Home'
+                  ? isActive
+                    ? 'text-amber-400'
+                    : 'text-amber-300/70'
+                  : isActive
+                    ? 'text-white'
+                    : 'text-green-300/60'
               }`
             }
           >
             {({ isActive }) => (
               <>
-                <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-                <span className={`text-[10px] mt-1 leading-tight text-center ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                <Icon size={label === 'Home' ? 26 : 22} strokeWidth={label === 'Home' ? 2.8 : isActive ? 2.5 : 2} />
+                <span className={`text-[10px] mt-1 leading-tight text-center ${label === 'Home' ? 'font-extrabold tracking-wide' : isActive ? 'font-semibold' : 'font-medium'}`}>
                   {label}
                 </span>
               </>
