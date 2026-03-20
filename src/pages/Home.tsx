@@ -364,7 +364,7 @@ export default function Home() {
             <div className="flex items-center justify-center gap-3 mt-5">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent to-amber-400/40" />
               <span className="text-xs font-extrabold tracking-[0.2em] uppercase text-amber-300">
-                Free Forever &bull; No Download
+                Download-free and always up to date
               </span>
               <div className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-400/40" />
             </div>
