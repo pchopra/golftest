@@ -15,14 +15,23 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-// Beautiful golf course images from Unsplash (free, no auth needed)
+// Stunning bright daytime golf course images (Pexels + Unsplash, free to use)
 const bgImages = [
-  "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=800&q=80",
-  "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=800&q=80",
-  "https://images.unsplash.com/photo-1592919505780-303950717480?w=800&q=80",
-  "https://images.unsplash.com/photo-1600166898405-da9535204843?w=800&q=80",
-  "https://images.unsplash.com/photo-1593111774240-004f3da24853?w=800&q=80",
+  "https://images.pexels.com/photos/914682/pexels-photo-914682.jpeg?auto=compress&cs=tinysrgb&w=800",
+  "https://images.pexels.com/photos/54123/pexels-photo-54123.jpeg?auto=compress&cs=tinysrgb&w=800",
+  "https://images.pexels.com/photos/164260/pexels-photo-164260.jpeg?auto=compress&cs=tinysrgb&w=800",
+  "https://images.pexels.com/photos/6542733/pexels-photo-6542733.jpeg?auto=compress&cs=tinysrgb&w=800",
+  "https://images.pexels.com/photos/69657/pexels-photo-69657.jpeg?auto=compress&cs=tinysrgb&w=800",
 ];
+
+// Bright Pexels golf images for feature cards (free, no auth)
+const cardImages = {
+  fairway: "https://images.pexels.com/photos/914682/pexels-photo-914682.jpeg?auto=compress&cs=tinysrgb&w=400",
+  golfer: "https://images.pexels.com/photos/54123/pexels-photo-54123.jpeg?auto=compress&cs=tinysrgb&w=400",
+  green: "https://images.pexels.com/photos/164260/pexels-photo-164260.jpeg?auto=compress&cs=tinysrgb&w=400",
+  aerial: "https://images.pexels.com/photos/6542733/pexels-photo-6542733.jpeg?auto=compress&cs=tinysrgb&w=400",
+  landscape: "https://images.pexels.com/photos/69657/pexels-photo-69657.jpeg?auto=compress&cs=tinysrgb&w=400",
+};
 
 const features = [
   {
@@ -30,88 +39,88 @@ const features = [
     description: "Top-rated courses near you",
     icon: MapPin,
     route: "/courses",
-    image: "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=400&q=75",
-    gradient: "from-emerald-600/80 to-green-900/90",
+    image: cardImages.fairway,
+    gradient: "from-emerald-600/70 to-green-900/80",
   },
   {
     title: "AI Swing Coach",
     description: "Real-time feedback on your swing",
     icon: Video,
     route: "/swing",
-    image: "https://images.unsplash.com/photo-1593111774240-004f3da24853?w=400&q=75",
-    gradient: "from-blue-600/80 to-indigo-900/90",
+    image: cardImages.golfer,
+    gradient: "from-blue-600/70 to-indigo-900/80",
   },
   {
     title: "Live Tournaments",
     description: "Scores & leaderboards live",
     icon: Trophy,
     route: "/tournaments",
-    image: "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=400&q=75",
-    gradient: "from-amber-600/80 to-orange-900/90",
+    image: cardImages.green,
+    gradient: "from-amber-500/70 to-orange-900/80",
   },
   {
     title: "Golf GPS",
     description: "Slope, wind & yardage",
     icon: Crosshair,
     route: "/gps",
-    image: "https://images.unsplash.com/photo-1600166898405-da9535204843?w=400&q=75",
-    gradient: "from-teal-600/80 to-cyan-900/90",
+    image: cardImages.aerial,
+    gradient: "from-teal-500/70 to-cyan-900/80",
   },
   {
     title: "KidsLoveGolf",
     description: "Coaching & tips for juniors",
     icon: Heart,
     route: "/kids",
-    image: "https://images.unsplash.com/photo-1592919505780-303950717480?w=400&q=75",
-    gradient: "from-pink-500/80 to-rose-900/90",
+    image: cardImages.landscape,
+    gradient: "from-pink-500/70 to-rose-900/80",
   },
   {
     title: "PGA Tour Live",
     description: "News, stats & live scoring",
     icon: Tv,
     route: "/pga",
-    image: "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=400&q=75",
-    gradient: "from-violet-600/80 to-purple-900/90",
+    image: cardImages.fairway,
+    gradient: "from-violet-500/70 to-purple-900/80",
   },
   {
     title: "Golf News",
     description: "Latest golf world headlines",
     icon: Newspaper,
     route: "/news",
-    image: "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=400&q=75",
-    gradient: "from-sky-600/80 to-blue-900/90",
+    image: cardImages.green,
+    gradient: "from-sky-500/70 to-blue-900/80",
   },
   {
     title: "Equipment Deals",
     description: "Save on clubs, balls & gear",
     icon: ShoppingBag,
     route: "/deals",
-    image: "https://images.unsplash.com/photo-1600166898405-da9535204843?w=400&q=75",
-    gradient: "from-red-600/80 to-rose-900/90",
+    image: cardImages.golfer,
+    gradient: "from-red-500/70 to-rose-900/80",
   },
   {
     title: "Top Videos",
     description: "Best golf clips this week",
     icon: Play,
     route: "/videos",
-    image: "https://images.unsplash.com/photo-1593111774240-004f3da24853?w=400&q=75",
-    gradient: "from-orange-500/80 to-red-900/90",
+    image: cardImages.aerial,
+    gradient: "from-orange-500/70 to-red-900/80",
   },
   {
     title: "Golf Podcasts",
     description: "Top rated golf shows",
     icon: Headphones,
     route: "/podcasts",
-    image: "https://images.unsplash.com/photo-1592919505780-303950717480?w=400&q=75",
-    gradient: "from-indigo-500/80 to-violet-900/90",
+    image: cardImages.landscape,
+    gradient: "from-indigo-500/70 to-violet-900/80",
   },
   {
     title: "Let's Play Buddy",
     description: "Find partners & schedule rounds",
     icon: Users,
     route: "/buddy",
-    image: "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=400&q=75",
-    gradient: "from-green-600/80 to-emerald-900/90",
+    image: cardImages.green,
+    gradient: "from-green-500/70 to-emerald-900/80",
   },
 ];
 
@@ -161,8 +170,8 @@ export default function Home() {
               }}
             />
           ))}
-          {/* Dark overlay for readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-gray-950" />
+          {/* Light overlay for readability — keeps images bright */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-gray-950/90" />
         </div>
 
         {/* Hero content */}
@@ -183,7 +192,7 @@ export default function Home() {
                   className="absolute inset-0 bg-cover bg-center"
                   style={{
                     backgroundImage:
-                      "url(https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=400&q=80)",
+                      "url(https://images.pexels.com/photos/914682/pexels-photo-914682.jpeg?auto=compress&cs=tinysrgb&w=400)",
                   }}
                 />
                 {/* Green tint overlay */}
@@ -251,19 +260,28 @@ export default function Home() {
           </div>
 
           {/* App name */}
-          <h1 className="text-5xl font-extrabold tracking-tight mb-3">
-            <span className="bg-gradient-to-r from-green-300 via-emerald-200 to-white bg-clip-text text-transparent drop-shadow-lg">
+          <h1
+            className="text-5xl font-extrabold tracking-tight mb-3"
+            style={{ textShadow: "0 2px 12px rgba(0,0,0,0.6)" }}
+          >
+            <span className="bg-gradient-to-r from-white via-green-200 to-emerald-300 bg-clip-text text-transparent">
               GolfBuddy
             </span>
           </h1>
 
           {/* Tagline */}
-          <p className="text-green-300 text-lg font-semibold mb-3 tracking-wide">
+          <p
+            className="text-white text-lg font-semibold mb-3 tracking-wide"
+            style={{ textShadow: "0 1px 8px rgba(0,0,0,0.7)" }}
+          >
             Your AI-Powered Caddie for the Modern Game
           </p>
 
           {/* Description */}
-          <p className="text-gray-300 text-sm leading-relaxed max-w-xs mx-auto">
+          <p
+            className="text-white/90 text-sm leading-relaxed max-w-xs mx-auto"
+            style={{ textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}
+          >
             The #1 smart golf companion trusted by players nationwide. Courses,
             coaching, live tournaments, deals & community — all in one app.
           </p>
