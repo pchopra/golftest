@@ -355,7 +355,7 @@ export default function Home() {
 
           <div className="px-6 py-7">
             <p className="text-xl text-white font-extrabold leading-8 text-center" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
-              One app. Every golfer's dream.
+              One App. Every Golfer's Dream.
             </p>
             <p className="text-sm text-gray-300 font-medium leading-6 text-center mt-3">
               Live tournaments, AI swing coaching, GPS range finder, tee time deals, equipment savings, junior programs, and a community of players — all in your pocket.
