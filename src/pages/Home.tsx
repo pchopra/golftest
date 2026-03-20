@@ -348,13 +348,43 @@ export default function Home() {
       </div>
 
       {/* Bottom tagline */}
-      <div className="px-6 py-8">
-        <div className="bg-gradient-to-r from-golf-800 to-golf-600 rounded-2xl p-5 text-center shadow-lg">
-          <p className="text-sm text-green-100 leading-relaxed font-medium">
-            From tee time deals to real-time leaderboards, swing analysis to
-            junior coaching — GolfBuddy brings the entire golf world to your
-            fingertips. Always updated, powered by AI.
-          </p>
+      <div className="px-4 py-8">
+        <div
+          className="relative overflow-hidden rounded-2xl shadow-xl"
+          style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #0d9488 100%)" }}
+        >
+          {/* Decorative golf ball pattern */}
+          <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full border-[3px] border-white/10" />
+          <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full border-[3px] border-white/10" />
+          <div className="absolute top-3 left-4 w-2 h-2 rounded-full bg-white/15" />
+          <div className="absolute bottom-4 right-8 w-2 h-2 rounded-full bg-white/15" />
+
+          <div className="relative z-10 p-6">
+            <p
+              className="text-base text-white font-bold leading-relaxed tracking-wide text-center"
+              style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+            >
+              From <span className="text-amber-300">tee time deals</span> to{" "}
+              <span className="text-emerald-300">real-time leaderboards</span>,{" "}
+              <span className="text-sky-300">swing analysis</span> to{" "}
+              <span className="text-pink-300">junior coaching</span> —
+            </p>
+            <p
+              className="text-lg text-white font-extrabold leading-relaxed tracking-wide text-center mt-2"
+              style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+            >
+              GolfBuddy brings the{" "}
+              <span className="underline decoration-amber-400 decoration-2 underline-offset-4">
+                entire golf world
+              </span>{" "}
+              to your fingertips.
+            </p>
+            <p className="text-center mt-3">
+              <span className="inline-block bg-white/15 backdrop-blur-sm text-emerald-200 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full border border-white/20">
+                Always Updated &bull; Powered by AI
+              </span>
+            </p>
+          </div>
         </div>
       </div>
     </div>
