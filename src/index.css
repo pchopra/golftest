@@ -61,6 +61,11 @@ body {
   animation: pulse-green 2s ease-in-out infinite;
 }
 
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-0.8deg); }
+  50% { transform: rotate(0.8deg); }
+}
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }

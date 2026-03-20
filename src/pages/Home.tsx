@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin,
@@ -13,7 +13,11 @@ import {
   Headphones,
   Users,
   ChevronRight,
+  GripVertical,
+  Pencil,
+  Check,
 } from "lucide-react";
+import { useDragReorder } from "../hooks/useDragReorder";
 
 // Stunning bright daytime golf course images (Pexels + Unsplash, free to use)
 const bgImages = [
@@ -33,8 +37,19 @@ const cardImages = {
   landscape: "https://images.pexels.com/photos/69657/pexels-photo-69657.jpeg?auto=compress&cs=tinysrgb&w=400",
 };
 
-const features = [
+interface Feature {
+  id: string;
+  title: string;
+  description: string;
+  icon: typeof MapPin;
+  route: string;
+  image: string;
+  gradient: string;
+}
+
+const defaultFeatures: Feature[] = [
   {
+    id: "courses",
     title: "Find Courses",
     description: "Top-rated courses near you",
     icon: MapPin,
@@ -43,6 +58,7 @@ const features = [
     gradient: "from-emerald-600/70 to-green-900/80",
   },
   {
+    id: "swing",
     title: "AI Swing Coach",
     description: "Real-time feedback on your swing",
     icon: Video,
@@ -51,6 +67,7 @@ const features = [
     gradient: "from-blue-600/70 to-indigo-900/80",
   },
   {
+    id: "tournaments",
     title: "Live Tournaments",
     description: "Scores & leaderboards live",
     icon: Trophy,
@@ -59,6 +76,7 @@ const features = [
     gradient: "from-amber-500/70 to-orange-900/80",
   },
   {
+    id: "gps",
     title: "Golf GPS",
     description: "Slope, wind & yardage",
     icon: Crosshair,
@@ -67,6 +85,7 @@ const features = [
     gradient: "from-teal-500/70 to-cyan-900/80",
   },
   {
+    id: "kids",
     title: "KidsLoveGolf",
     description: "Coaching & tips for juniors",
     icon: Heart,
@@ -75,6 +94,7 @@ const features = [
     gradient: "from-pink-500/70 to-rose-900/80",
   },
   {
+    id: "pga",
     title: "PGA Tour Live",
     description: "News, stats & live scoring",
     icon: Tv,
@@ -83,6 +103,7 @@ const features = [
     gradient: "from-violet-500/70 to-purple-900/80",
   },
   {
+    id: "news",
     title: "Golf News",
     description: "Latest golf world headlines",
     icon: Newspaper,
@@ -91,6 +112,7 @@ const features = [
     gradient: "from-sky-500/70 to-blue-900/80",
   },
   {
+    id: "deals",
     title: "Equipment Deals",
     description: "Save on clubs, balls & gear",
     icon: ShoppingBag,
@@ -99,6 +121,7 @@ const features = [
     gradient: "from-red-500/70 to-rose-900/80",
   },
   {
+    id: "videos",
     title: "Top Videos",
     description: "Best golf clips this week",
     icon: Play,
@@ -107,6 +130,7 @@ const features = [
     gradient: "from-orange-500/70 to-red-900/80",
   },
   {
+    id: "podcasts",
     title: "Golf Podcasts",
     description: "Top rated golf shows",
     icon: Headphones,
@@ -115,6 +139,7 @@ const features = [
     gradient: "from-indigo-500/70 to-violet-900/80",
   },
   {
+    id: "buddy",
     title: "Let's Play Buddy",
     description: "Find partners & schedule rounds",
     icon: Users,
@@ -124,10 +149,50 @@ const features = [
   },
 ];
 
+const STORAGE_KEY = "golfbuddy-feature-order";
+
+function loadFeatureOrder(): Feature[] {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return defaultFeatures;
+    const ids: string[] = JSON.parse(saved);
+    const byId = new Map(defaultFeatures.map(f => [f.id, f]));
+    const ordered = ids.map(id => byId.get(id)).filter(Boolean) as Feature[];
+    // Append any new features not in saved order
+    const savedSet = new Set(ids);
+    defaultFeatures.forEach(f => { if (!savedSet.has(f.id)) ordered.push(f); });
+    return ordered;
+  } catch {
+    return defaultFeatures;
+  }
+}
+
+function saveFeatureOrder(features: Feature[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(features.map(f => f.id)));
+}
+
 export default function Home() {
   const navigate = useNavigate();
   const [bgIndex, setBgIndex] = useState(0);
   const [loaded, setLoaded] = useState<boolean[]>(new Array(bgImages.length).fill(false));
+  const [features, setFeatures] = useState<Feature[]>(loadFeatureOrder);
+  const [editMode, setEditMode] = useState(false);
+
+  const handleReorder = useCallback((newFeatures: Feature[]) => {
+    setFeatures(newFeatures);
+    saveFeatureOrder(newFeatures);
+  }, []);
+
+  const {
+    containerRef,
+    setItemRef,
+    dragState,
+    getDisplayItems,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    handleMouseDown,
+  } = useDragReorder(features, handleReorder);
 
   // Preload images
   useEffect(() => {
@@ -305,43 +370,93 @@ export default function Home() {
 
       {/* Feature Cards */}
       <div className="px-4 -mt-2">
-        <div className="grid grid-cols-2 gap-3">
-          {features.map((feature) => {
-            const Icon = feature.icon;
-            return (
-              <button
-                key={feature.route}
-                onClick={() => navigate(feature.route)}
-                className="relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl active:scale-[0.97] transition-all duration-200 text-left group"
-                style={{ aspectRatio: "1 / 0.85" }}
-              >
-                {/* Card background image */}
-                <div
-                  className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
-                  style={{ backgroundImage: `url(${feature.image})` }}
-                />
-                {/* Gradient overlay */}
-                <div
-                  className={`absolute inset-0 bg-gradient-to-t ${feature.gradient}`}
-                />
+        {/* Edit / Done toggle */}
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => setEditMode(!editMode)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+              editMode
+                ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
+                : 'bg-white/10 text-white/70 hover:bg-white/20'
+            }`}
+          >
+            {editMode ? <Check size={13} /> : <Pencil size={13} />}
+            {editMode ? 'Done' : 'Customize'}
+          </button>
+        </div>
 
-                {/* Content */}
-                <div className="relative z-10 h-full flex flex-col justify-end p-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2 border border-white/20">
-                    <Icon className="w-4.5 h-4.5 text-white" />
-                  </div>
-                  <h3 className="text-sm font-bold text-white leading-tight">
-                    {feature.title}
-                  </h3>
-                  <p className="text-[11px] text-white/75 mt-0.5 leading-snug">
-                    {feature.description}
-                  </p>
-                  <ChevronRight
-                    size={14}
-                    className="absolute top-3 right-3 text-white/50 group-hover:text-white/90 transition-colors"
+        {editMode && (
+          <p className="text-center text-green-400/80 text-[11px] font-medium mb-3 animate-pulse">
+            Drag cards to reorder your favorites to the top
+          </p>
+        )}
+
+        <div ref={containerRef} className="grid grid-cols-2 gap-3">
+          {getDisplayItems().map(({ item: feature, originalIndex }, displayIndex) => {
+            const Icon = feature.icon;
+            const isDragging = dragState?.dragIndex === originalIndex;
+            return (
+              <div
+                key={feature.id}
+                ref={setItemRef(displayIndex)}
+                className={`relative transition-all duration-200 ${
+                  isDragging ? 'opacity-50 scale-95' : ''
+                } ${editMode ? 'animate-[wiggle_0.3s_ease-in-out_infinite]' : ''}`}
+                style={editMode ? { animationDelay: `${displayIndex * 0.05}s` } : undefined}
+              >
+                <button
+                  onClick={() => !editMode && navigate(feature.route)}
+                  className={`relative w-full overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 text-left group ${
+                    editMode ? 'ring-2 ring-green-400/40 cursor-grab' : 'active:scale-[0.97]'
+                  }`}
+                  style={{ aspectRatio: "1 / 0.85" }}
+                >
+                  {/* Card background image */}
+                  <div
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
+                    style={{ backgroundImage: `url(${feature.image})` }}
                   />
-                </div>
-              </button>
+                  {/* Gradient overlay */}
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-t ${feature.gradient}`}
+                  />
+
+                  {/* Drag handle (edit mode) */}
+                  {editMode && (
+                    <div
+                      className="absolute top-0 left-0 right-0 z-30 flex justify-center py-2 cursor-grab active:cursor-grabbing touch-none"
+                      onTouchStart={handleTouchStart(displayIndex)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                      onMouseDown={handleMouseDown(displayIndex)}
+                    >
+                      <div className="bg-white/30 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1">
+                        <GripVertical size={14} className="text-white" />
+                        <span className="text-white text-[10px] font-bold">HOLD & DRAG</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Content */}
+                  <div className="relative z-10 h-full flex flex-col justify-end p-3.5">
+                    <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2 border border-white/20">
+                      <Icon className="w-4.5 h-4.5 text-white" />
+                    </div>
+                    <h3 className="text-sm font-bold text-white leading-tight">
+                      {feature.title}
+                    </h3>
+                    <p className="text-[11px] text-white/75 mt-0.5 leading-snug">
+                      {feature.description}
+                    </p>
+                    {!editMode && (
+                      <ChevronRight
+                        size={14}
+                        className="absolute top-3 right-3 text-white/50 group-hover:text-white/90 transition-colors"
+                      />
+                    )}
+                  </div>
+                </button>
+              </div>
             );
           })}
         </div>
