@@ -349,28 +349,28 @@ export default function Home() {
 
       {/* Bottom tagline */}
       <div className="px-4 py-8">
-        <div className="relative overflow-hidden rounded-2xl shadow-2xl bg-white">
-          {/* Top accent bar */}
-          <div className="h-1.5 bg-gradient-to-r from-emerald-500 via-green-400 to-teal-500" />
+        <div className="relative overflow-hidden rounded-2xl shadow-2xl" style={{ background: "linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)" }}>
+          {/* Accent stripe */}
+          <div className="h-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400" />
 
-          {/* Background pattern */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle, #000 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
-
-          <div className="relative z-10 px-6 py-7">
-            <p className="text-gray-800 text-base font-bold leading-7 text-center tracking-wide" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
-              From tee time deals to real-time leaderboards, swing analysis to junior coaching — GolfBuddy brings the entire golf world to your fingertips.
+          <div className="px-6 py-7">
+            <p className="text-xl text-white font-extrabold leading-8 text-center" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
+              One app. Every golfer's dream.
+            </p>
+            <p className="text-sm text-gray-300 font-medium leading-6 text-center mt-3">
+              Live tournaments, AI swing coaching, GPS range finder, tee time deals, equipment savings, junior programs, and a community of players — all in your pocket. Download-free and always up to date.
             </p>
 
             <div className="flex items-center justify-center gap-3 mt-5">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-gray-300" />
-              <span className="text-xs font-extrabold tracking-[0.2em] uppercase text-golf-700">
-                100% Free &bull; No Download Required
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-amber-400/40" />
+              <span className="text-xs font-extrabold tracking-[0.2em] uppercase text-amber-300">
+                Free Forever &bull; No Download
               </span>
-              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-gray-300" />
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-400/40" />
             </div>
 
-            <p className="text-center mt-4 text-gray-500 text-xs font-semibold tracking-wider uppercase">
-              Always Updated &bull; Powered by AI
+            <p className="text-center mt-4 text-gray-400 text-[11px] font-semibold tracking-widest uppercase">
+              Powered by AI
             </p>
           </div>
         </div>
