@@ -1,19 +1,23 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import type { User, BuddyAvailability, ChatGroup, ChatMessage } from '../data/mockUsers';
-import { mockUsers, mockAvailability, mockChatGroups } from '../data/mockUsers';
+import type { User, BuddyAvailability, ChatGroup, ChatMessage, WeekendPoll, PollVote } from '../data/mockUsers';
+import { mockUsers, mockAvailability, mockChatGroups, mockWeekendPolls } from '../data/mockUsers';
 
 interface AuthContextType {
   currentUser: User | null;
   allUsers: User[];
   availability: BuddyAvailability[];
   chatGroups: ChatGroup[];
+  weekendPolls: WeekendPoll[];
   login: (email: string) => boolean;
   register: (user: Omit<User, 'id' | 'createdAt'>) => void;
   logout: () => void;
   setMyAvailability: (avail: Omit<BuddyAvailability, 'userId'>) => void;
   getMyAvailability: () => BuddyAvailability | undefined;
+  toggleFreeNow: (until: string) => void;
   createChatGroup: (name: string, memberIds: string[]) => ChatGroup;
   sendMessage: (groupId: string, text: string) => void;
+  createWeekendPoll: (groupId: string) => WeekendPoll;
+  voteOnPoll: (pollId: string, vote: Omit<PollVote, 'userId'>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -23,6 +27,7 @@ const STORAGE_KEYS = {
   users: 'golf-users',
   availability: 'golf-availability',
   chatGroups: 'golf-chat-groups',
+  weekendPolls: 'golf-weekend-polls',
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -46,6 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return stored ? JSON.parse(stored) : mockChatGroups;
   });
 
+  const [weekendPolls, setWeekendPolls] = useState<WeekendPoll[]>(() => {
+    const stored = localStorage.getItem(STORAGE_KEYS.weekendPolls);
+    return stored ? JSON.parse(stored) : mockWeekendPolls;
+  });
+
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(currentUser));
@@ -65,6 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.chatGroups, JSON.stringify(chatGroups));
   }, [chatGroups]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.weekendPolls, JSON.stringify(weekendPolls));
+  }, [weekendPolls]);
 
   const login = (email: string): boolean => {
     const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
@@ -116,6 +130,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return group;
   };
 
+  const toggleFreeNow = (until: string) => {
+    if (!currentUser) return;
+    setAvailability(prev => {
+      const existing = prev.find(a => a.userId === currentUser.id);
+      if (existing) {
+        return prev.map(a =>
+          a.userId === currentUser.id
+            ? { ...a, isFreeNow: !a.isFreeNow, freeNowUntil: !a.isFreeNow ? until : undefined }
+            : a
+        );
+      }
+      // Create minimal availability if none exists
+      return [...prev, {
+        userId: currentUser.id,
+        availableDates: [],
+        availableTimes: [],
+        preferredCourseId: '',
+        alternateCourseIds: [],
+        isFreeNow: true,
+        freeNowUntil: until,
+      }];
+    });
+  };
+
   const sendMessage = (groupId: string, text: string) => {
     if (!currentUser) return;
     const msg: ChatMessage = {
@@ -131,12 +169,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const createWeekendPoll = (groupId: string): WeekendPoll => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const daysUntilSat = (6 - dayOfWeek + 7) % 7 || 7;
+    const sat = new Date(today);
+    sat.setDate(today.getDate() + daysUntilSat);
+    const sun = new Date(sat);
+    sun.setDate(sat.getDate() + 1);
+    const satStr = sat.toISOString().split('T')[0];
+    const sunStr = sun.toISOString().split('T')[0];
+
+    const poll: WeekendPoll = {
+      id: `poll-${Date.now()}`,
+      groupId,
+      createdBy: currentUser?.id || '',
+      createdAt: new Date().toISOString(),
+      weekendDate: satStr,
+      dateOptions: [satStr, sunStr],
+      timeOptions: ['7:00 AM', '9:30 AM', '11:00 AM', '2:00 PM'],
+      votes: [],
+      status: 'open',
+    };
+    setWeekendPolls(prev => [...prev, poll]);
+    return poll;
+  };
+
+  const voteOnPoll = (pollId: string, vote: Omit<PollVote, 'userId'>) => {
+    if (!currentUser) return;
+    setWeekendPolls(prev =>
+      prev.map(p => {
+        if (p.id !== pollId) return p;
+        const filtered = p.votes.filter(v => v.userId !== currentUser.id);
+        return { ...p, votes: [...filtered, { ...vote, userId: currentUser.id }] };
+      })
+    );
+  };
+
   return (
     <AuthContext.Provider value={{
-      currentUser, allUsers, availability, chatGroups,
+      currentUser, allUsers, availability, chatGroups, weekendPolls,
       login, register, logout,
-      setMyAvailability, getMyAvailability,
+      setMyAvailability, getMyAvailability, toggleFreeNow,
       createChatGroup, sendMessage,
+      createWeekendPoll, voteOnPoll,
     }}>
       {children}
     </AuthContext.Provider>

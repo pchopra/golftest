@@ -20,6 +20,31 @@ export interface BuddyAvailability {
   availableTimes: string[]; // e.g. '7:00 AM', '9:30 AM'
   preferredCourseId: string;
   alternateCourseIds: string[]; // up to 3 alternates
+  needsRide?: boolean;
+  canOfferRide?: boolean;
+  rideNote?: string; // e.g. "Can pick up 2 from South SF"
+  isFreeNow?: boolean; // "I'm Free NOW" quick status
+  freeNowUntil?: string; // e.g. "5:00 PM"
+}
+
+export interface WeekendPoll {
+  id: string;
+  groupId: string;
+  createdBy: string;
+  createdAt: string;
+  weekendDate: string; // Saturday date
+  dateOptions: string[]; // Sat + Sun
+  timeOptions: string[];
+  votes: PollVote[];
+  status: 'open' | 'closed';
+}
+
+export interface PollVote {
+  userId: string;
+  selectedDates: string[];
+  selectedTimes: string[];
+  needsRide: boolean;
+  canOfferRide: boolean;
 }
 
 export interface ChatGroup {
@@ -159,6 +184,10 @@ export const mockAvailability: BuddyAvailability[] = [
     availableTimes: ['7:00 AM', '9:30 AM', '2:00 PM'],
     preferredCourseId: '2',
     alternateCourseIds: ['3', '7', '11'],
+    canOfferRide: true,
+    rideNote: 'Can pick up 2 from downtown SF',
+    isFreeNow: true,
+    freeNowUntil: '5:00 PM',
   },
   {
     userId: 'user-2',
@@ -166,6 +195,8 @@ export const mockAvailability: BuddyAvailability[] = [
     availableTimes: ['9:30 AM', '11:00 AM'],
     preferredCourseId: '10',
     alternateCourseIds: ['11', '3', '14'],
+    needsRide: true,
+    rideNote: 'Need ride from Berkeley area',
   },
   {
     userId: 'user-3',
@@ -173,6 +204,8 @@ export const mockAvailability: BuddyAvailability[] = [
     availableTimes: ['7:00 AM', '11:00 AM', '3:00 PM'],
     preferredCourseId: '14',
     alternateCourseIds: ['12', '10', '7'],
+    needsRide: true,
+    rideNote: 'Senior - need ride from Palo Alto',
   },
   {
     userId: 'user-4',
@@ -180,6 +213,8 @@ export const mockAvailability: BuddyAvailability[] = [
     availableTimes: ['9:30 AM', '2:00 PM'],
     preferredCourseId: '12',
     alternateCourseIds: ['3', '14', '7'],
+    canOfferRide: true,
+    rideNote: 'Can take 3 passengers from Burlingame',
   },
   {
     userId: 'user-5',
@@ -187,6 +222,8 @@ export const mockAvailability: BuddyAvailability[] = [
     availableTimes: ['7:00 AM', '9:30 AM'],
     preferredCourseId: '11',
     alternateCourseIds: ['2', '10', '14'],
+    isFreeNow: true,
+    freeNowUntil: '3:00 PM',
   },
   {
     userId: 'user-6',
@@ -194,6 +231,8 @@ export const mockAvailability: BuddyAvailability[] = [
     availableTimes: ['11:00 AM', '2:00 PM', '3:00 PM'],
     preferredCourseId: '12',
     alternateCourseIds: ['7', '3', '14'],
+    needsRide: true,
+    rideNote: 'Need ride from Pacifica - no car',
   },
   {
     userId: 'user-7',
@@ -201,6 +240,8 @@ export const mockAvailability: BuddyAvailability[] = [
     availableTimes: ['9:30 AM', '11:00 AM'],
     preferredCourseId: '7',
     alternateCourseIds: ['3', '12', '10'],
+    canOfferRide: true,
+    rideNote: 'SUV - can take clubs + 3 players from SSF',
   },
   {
     userId: 'user-8',
@@ -208,6 +249,50 @@ export const mockAvailability: BuddyAvailability[] = [
     availableTimes: ['7:00 AM', '2:00 PM'],
     preferredCourseId: '14',
     alternateCourseIds: ['11', '10', '12'],
+  },
+];
+
+// Helper: get next Saturday and Sunday dates
+function getNextWeekendDates(): [string, string] {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const daysUntilSat = (6 - dayOfWeek + 7) % 7 || 7;
+  const sat = new Date(today);
+  sat.setDate(today.getDate() + daysUntilSat);
+  const sun = new Date(sat);
+  sun.setDate(sat.getDate() + 1);
+  return [sat.toISOString().split('T')[0], sun.toISOString().split('T')[0]];
+}
+
+const [nextSat, nextSun] = getNextWeekendDates();
+
+export const mockWeekendPolls: WeekendPoll[] = [
+  {
+    id: 'poll-1',
+    groupId: 'group-1',
+    createdBy: 'user-1',
+    createdAt: '2026-03-20T08:00:00Z',
+    weekendDate: nextSat,
+    dateOptions: [nextSat, nextSun],
+    timeOptions: ['7:00 AM', '9:30 AM', '11:00 AM', '2:00 PM'],
+    votes: [
+      { userId: 'user-2', selectedDates: [nextSat], selectedTimes: ['9:30 AM'], needsRide: true, canOfferRide: false },
+      { userId: 'user-5', selectedDates: [nextSat, nextSun], selectedTimes: ['7:00 AM', '9:30 AM'], needsRide: false, canOfferRide: false },
+    ],
+    status: 'open',
+  },
+  {
+    id: 'poll-2',
+    groupId: 'group-2',
+    createdBy: 'user-3',
+    createdAt: '2026-03-20T09:00:00Z',
+    weekendDate: nextSat,
+    dateOptions: [nextSat, nextSun],
+    timeOptions: ['9:30 AM', '11:00 AM', '2:00 PM'],
+    votes: [
+      { userId: 'user-7', selectedDates: [nextSun], selectedTimes: ['11:00 AM'], needsRide: false, canOfferRide: true },
+    ],
+    status: 'open',
   },
 ];
 
