@@ -494,11 +494,11 @@ export default function LetsPlayBuddy() {
       {/* My Availability Summary */}
       {getMyAvailability() && (
         <div className="mb-4 p-3 rounded-xl bg-golf-50 border border-golf-200">
-          <p className="text-xs font-semibold text-golf-800 mb-1">Your Availability</p>
-          <p className="text-xs text-golf-700">
+          <p className="text-sm font-bold text-golf-900 mb-1">Your Availability</p>
+          <p className="text-sm font-semibold text-golf-800">
             {getMyAvailability()!.availableDates.map(d => formatDate(d)).join(', ')} · {getMyAvailability()!.availableTimes.join(', ')}
           </p>
-          <p className="text-xs text-golf-600 mt-0.5">
+          <p className="text-sm font-medium text-golf-700 mt-0.5">
             Preferred: {getCourseName(getMyAvailability()!.preferredCourseId)}
           </p>
         </div>
