@@ -8,7 +8,7 @@ import type { BuddyAvailability, User, ChatGroup, WeekendPoll } from '../data/mo
 import {
   Calendar, Clock, MapPin, Users, MessageCircle, Send,
   ChevronRight, Plus, Check, Star, DollarSign, ArrowLeft,
-  UserCheck, Users2, Filter, Flame, BarChart3, Car, Eye,
+  UserCheck, Users2, Filter, Flame, BarChart3, Car, Eye, Phone,
 } from 'lucide-react';
 
 type MainTab = 'buddies' | 'chat';
@@ -910,7 +910,19 @@ function WeekendPollPanel({
                 {/* Existing votes summary */}
                 {poll.votes.length > 0 && (
                   <div className="mt-3 space-y-1.5">
-                    <p className="text-[10px] font-semibold text-gray-500 uppercase">Votes ({poll.votes.length})</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-semibold text-gray-500 uppercase">Votes ({poll.votes.length})</p>
+                      {poll.votes.length > 0 && (
+                        <div className="flex gap-1.5">
+                          <button className="flex items-center gap-0.5 text-[9px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-2 py-1 hover:bg-green-100 transition-colors">
+                            <MessageCircle size={11} /> Group Chat
+                          </button>
+                          <button className="flex items-center gap-0.5 text-[9px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1 hover:bg-blue-100 transition-colors">
+                            <Phone size={11} /> Group Call
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     {poll.votes.map(vote => {
                       const voter = getUserById(vote.userId);
                       return (
@@ -1017,9 +1029,21 @@ function GroupAvailabilityViewer({
         <>
           {/* Available members */}
           <div className="mb-3">
-            <p className="text-xs font-bold text-green-800 mb-2 flex items-center gap-1">
-              <Check size={13} /> Available ({availableMembers.length})
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold text-green-800 flex items-center gap-1">
+                <Check size={13} /> Available ({availableMembers.length})
+              </p>
+              {availableMembers.length > 0 && (
+                <div className="flex gap-1.5">
+                  <button className="flex items-center gap-0.5 text-[9px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-2 py-1 hover:bg-green-100 transition-colors">
+                    <MessageCircle size={11} /> Group Chat
+                  </button>
+                  <button className="flex items-center gap-0.5 text-[9px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1 hover:bg-blue-100 transition-colors">
+                    <Phone size={11} /> Group Call
+                  </button>
+                </div>
+              )}
+            </div>
             {availableMembers.length === 0 ? (
               <p className="text-xs text-gray-400 ml-5">No one is free at this time.</p>
             ) : (
