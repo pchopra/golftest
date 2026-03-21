@@ -23,8 +23,8 @@ const podcasts: Podcast[] = [
     rating: 4.9,
     gradientFrom: "from-emerald-600",
     gradientTo: "to-teal-400",
-    appleUrl: "https://podcasts.apple.com/us/podcast/no-laying-up",
-    spotifyUrl: "https://open.spotify.com/show/no-laying-up",
+    appleUrl: "https://podcasts.apple.com/us/podcast/no-laying-up-golf-podcast/id880837011",
+    spotifyUrl: "https://open.spotify.com/show/3s3ihp9OHKAMuc46RitVPj",
   },
   {
     rank: 2,
@@ -35,8 +35,8 @@ const podcasts: Podcast[] = [
     rating: 4.8,
     gradientFrom: "from-amber-500",
     gradientTo: "to-orange-400",
-    appleUrl: "https://podcasts.apple.com/us/podcast/the-fried-egg",
-    spotifyUrl: "https://open.spotify.com/show/the-fried-egg",
+    appleUrl: "https://podcasts.apple.com/us/podcast/the-fried-egg-golf-podcast/id1131723994",
+    spotifyUrl: "https://open.spotify.com/show/41WoJ1kV87poaGgCTmY9zW",
   },
   {
     rank: 3,
@@ -47,8 +47,8 @@ const podcasts: Podcast[] = [
     rating: 4.8,
     gradientFrom: "from-blue-600",
     gradientTo: "to-cyan-400",
-    appleUrl: "https://podcasts.apple.com/us/podcast/chasing-scratch",
-    spotifyUrl: "https://open.spotify.com/show/chasing-scratch",
+    appleUrl: "https://podcasts.apple.com/us/podcast/chasing-scratch-a-golf-podcast/id1281285953",
+    spotifyUrl: "https://open.spotify.com/show/2W77oe7Nw7G8RzKkhsMi5E",
   },
   {
     rank: 4,
@@ -59,8 +59,8 @@ const podcasts: Podcast[] = [
     rating: 4.7,
     gradientFrom: "from-purple-600",
     gradientTo: "to-pink-400",
-    appleUrl: "https://podcasts.apple.com/us/podcast/golfs-subpar",
-    spotifyUrl: "https://open.spotify.com/show/golfs-subpar",
+    appleUrl: "https://podcasts.apple.com/us/podcast/subpar/id1498625027",
+    spotifyUrl: "https://open.spotify.com/show/0JVg8pE3YOQidsEa3vGBSv",
   },
   {
     rank: 5,
@@ -71,8 +71,8 @@ const podcasts: Podcast[] = [
     rating: 4.7,
     gradientFrom: "from-rose-600",
     gradientTo: "to-red-400",
-    appleUrl: "https://podcasts.apple.com/us/podcast/erik-anders-lang",
-    spotifyUrl: "https://open.spotify.com/show/erik-anders-lang",
+    appleUrl: "https://podcasts.apple.com/us/podcast/the-erik-anders-lang-show-golf-travel-comedy/id1350600322",
+    spotifyUrl: "https://open.spotify.com/show/3Zrb10DcxlJ5P9PcWY8Gaf",
   },
   {
     rank: 6,
@@ -83,56 +83,56 @@ const podcasts: Podcast[] = [
     rating: 4.6,
     gradientFrom: "from-indigo-600",
     gradientTo: "to-blue-400",
-    appleUrl: "https://podcasts.apple.com/us/podcast/fore-play",
-    spotifyUrl: "https://open.spotify.com/show/fore-play",
+    appleUrl: "https://podcasts.apple.com/us/podcast/fore-play/id1200343264",
+    spotifyUrl: "https://open.spotify.com/show/0F7S8Jv6RsQXm5QrD4aZUX",
   },
   {
     rank: 7,
     name: "Golf Channel Podcast",
     episode: "Tour Confidential: Who Wins The Players?",
-    host: "Golf Channel",
+    host: "Rex Hoggard & Ryan Lavner",
     duration: "45m",
     rating: 4.5,
     gradientFrom: "from-sky-600",
     gradientTo: "to-emerald-400",
-    appleUrl: "https://podcasts.apple.com/us/podcast/golf-channel-podcast",
-    spotifyUrl: "https://open.spotify.com/show/golf-channel-podcast",
+    appleUrl: "https://podcasts.apple.com/us/podcast/golf-channel-podcast-with-rex-lav/id1068022483",
+    spotifyUrl: "https://open.spotify.com/show/0gpL44DCiroQ6FxO2I3u4Q",
   },
   {
     rank: 8,
-    name: "Shotgun Start",
+    name: "The Shotgun Start",
     episode: "Equipment Wars: Driver Edition",
     host: "Andy & Brendan",
     duration: "55m",
     rating: 4.5,
     gradientFrom: "from-lime-600",
     gradientTo: "to-green-400",
-    appleUrl: "https://podcasts.apple.com/us/podcast/shotgun-start",
-    spotifyUrl: "https://open.spotify.com/show/shotgun-start",
+    appleUrl: "https://podcasts.apple.com/us/podcast/the-shotgun-start/id1435273901",
+    spotifyUrl: "https://open.spotify.com/show/0jMFGCaFpcG0eKyOCNbb0T",
   },
   {
     rank: 9,
-    name: "Sweet Spot",
+    name: "The Sweet Spot",
     episode: "How to Practice Like a Pro",
-    host: "Adam Young",
+    host: "Adam Young & Jon Sherman",
     duration: "40m",
     rating: 4.4,
     gradientFrom: "from-fuchsia-600",
     gradientTo: "to-violet-400",
-    appleUrl: "https://podcasts.apple.com/us/podcast/sweet-spot",
-    spotifyUrl: "https://open.spotify.com/show/sweet-spot",
+    appleUrl: "https://podcasts.apple.com/us/podcast/the-sweet-spot-golf-podcast/id1552917994",
+    spotifyUrl: "https://open.spotify.com/show/1CI8N2DX2jOEGFowlyESPt",
   },
   {
     rank: 10,
-    name: "Rick Shiels Golf Show",
+    name: "The Rick Shiels Golf Show",
     episode: "I Played with a Tour Pro for a Day",
     host: "Rick Shiels",
     duration: "48m",
     rating: 4.6,
     gradientFrom: "from-teal-600",
     gradientTo: "to-cyan-300",
-    appleUrl: "https://podcasts.apple.com/us/podcast/rick-shiels-golf-show",
-    spotifyUrl: "https://open.spotify.com/show/rick-shiels-golf-show",
+    appleUrl: "https://podcasts.apple.com/us/podcast/the-rick-shiels-golf-show/id1406443091",
+    spotifyUrl: "https://open.spotify.com/show/7gGRqpguzCKFJbqa3B6FCT",
   },
 ];
 
@@ -202,28 +202,32 @@ function PodcastCard({ podcast }: { podcast: Podcast }) {
           <StarRating rating={podcast.rating} />
         </div>
 
-        {/* Listen buttons */}
+        {/* Listen buttons — only shown when URL is a real link */}
         <div className="flex items-center gap-2 mt-3">
-          <a
-            href={podcast.appleUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-golf-50 hover:bg-golf-100 text-golf-800 text-xs font-medium rounded-lg transition-colors"
-          >
-            <Play className="w-3.5 h-3.5" />
-            Apple Podcasts
-            <ExternalLink className="w-3 h-3" />
-          </a>
-          <a
-            href={podcast.spotifyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-golf-50 hover:bg-golf-100 text-golf-800 text-xs font-medium rounded-lg transition-colors"
-          >
-            <Play className="w-3.5 h-3.5" />
-            Spotify
-            <ExternalLink className="w-3 h-3" />
-          </a>
+          {podcast.appleUrl && (
+            <a
+              href={podcast.appleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-golf-50 hover:bg-golf-100 text-golf-800 text-xs font-medium rounded-lg transition-colors"
+            >
+              <Play className="w-3.5 h-3.5" />
+              Apple Podcasts
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+          {podcast.spotifyUrl && (
+            <a
+              href={podcast.spotifyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-golf-50 hover:bg-golf-100 text-golf-800 text-xs font-medium rounded-lg transition-colors"
+            >
+              <Play className="w-3.5 h-3.5" />
+              Spotify
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
         </div>
       </div>
     </div>
