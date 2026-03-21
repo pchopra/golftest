@@ -6,6 +6,7 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   skillLevel: SkillLevel;
   gender: Gender;
   address: string;
@@ -70,6 +71,7 @@ export const mockUsers: User[] = [
     firstName: 'Mike',
     lastName: 'Johnson',
     email: 'mike.j@email.com',
+    phone: '(415) 555-0101',
     skillLevel: 'Skilled',
     gender: 'Male',
     address: '123 Market St, San Francisco, CA',
@@ -82,6 +84,7 @@ export const mockUsers: User[] = [
     firstName: 'Sarah',
     lastName: 'Chen',
     email: 'sarah.chen@email.com',
+    phone: '(510) 555-0202',
     skillLevel: 'Average',
     gender: 'Female',
     address: '456 University Ave, Berkeley, CA',
@@ -94,6 +97,7 @@ export const mockUsers: User[] = [
     firstName: 'James',
     lastName: 'Wilson',
     email: 'jwilson@email.com',
+    phone: '(650) 555-0303',
     skillLevel: 'Beginner',
     gender: 'Male',
     address: '789 El Camino Real, Palo Alto, CA',
@@ -106,6 +110,7 @@ export const mockUsers: User[] = [
     firstName: 'Emily',
     lastName: 'Park',
     email: 'emily.park@email.com',
+    phone: '(650) 555-0404',
     skillLevel: 'Casual/Sporty',
     gender: 'Female',
     address: '321 Broadway, Burlingame, CA',
@@ -118,6 +123,7 @@ export const mockUsers: User[] = [
     firstName: 'David',
     lastName: 'Martinez',
     email: 'dmartinez@email.com',
+    phone: '(510) 555-0505',
     skillLevel: 'Skilled',
     gender: 'Male',
     address: '555 Main St, Alameda, CA',
@@ -130,6 +136,7 @@ export const mockUsers: User[] = [
     firstName: 'Lisa',
     lastName: 'Thompson',
     email: 'lisa.t@email.com',
+    phone: '(650) 555-0606',
     skillLevel: 'Average',
     gender: 'Female',
     address: '100 Pacific Ave, Pacifica, CA',
@@ -142,6 +149,7 @@ export const mockUsers: User[] = [
     firstName: 'Ryan',
     lastName: 'Kim',
     email: 'ryan.kim@email.com',
+    phone: '(415) 555-0707',
     skillLevel: 'Beginner',
     gender: 'Male',
     address: '222 Grand Ave, South San Francisco, CA',
@@ -154,6 +162,7 @@ export const mockUsers: User[] = [
     firstName: 'Priya',
     lastName: 'Patel',
     email: 'priya.p@email.com',
+    phone: '(408) 555-0808',
     skillLevel: 'Casual/Sporty',
     gender: 'Female',
     address: '400 Castro St, Mountain View, CA',
