@@ -8,7 +8,7 @@ type Tab = 'login' | 'register';
 type VerifyMethod = 'email' | 'phone';
 
 export default function Login() {
-  const { login, register, currentUser, logout } = useAuth();
+  const { login, register, currentUser, allUsers, logout } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('login');
   const [error, setError] = useState('');
@@ -16,12 +16,15 @@ export default function Login() {
   // Login fields
   const [loginEmail, setLoginEmail] = useState('');
 
-  // Verification state
+  // Verification state (shared by login & register)
   const [showVerify, setShowVerify] = useState(false);
+  const [verifyFlow, setVerifyFlow] = useState<'login' | 'register'>('register');
   const [verifyMethod, setVerifyMethod] = useState<VerifyMethod>('email');
   const [generatedCode, setGeneratedCode] = useState('');
   const [enteredCode, setEnteredCode] = useState('');
   const [pendingRegData, setPendingRegData] = useState<Parameters<typeof register>[0] | null>(null);
+  const [pendingLoginEmail, setPendingLoginEmail] = useState('');
+  const [pendingLoginPhone, setPendingLoginPhone] = useState('');
 
   // Register fields
   const [firstName, setFirstName] = useState('');
@@ -45,12 +48,20 @@ export default function Login() {
       setError('Please enter your email');
       return;
     }
-    const success = login(loginEmail.trim());
-    if (success) {
-      navigate('/buddy');
-    } else {
+    // Find user to check if account exists and get their phone
+    const foundUser = allUsers.find(u => u.email.toLowerCase() === loginEmail.trim().toLowerCase());
+    if (!foundUser) {
       setError('No account found with that email. Please register first.');
+      return;
     }
+    // Show OTP verification for login
+    const code = String(Math.floor(10000 + Math.random() * 90000));
+    setGeneratedCode(code);
+    setEnteredCode('');
+    setPendingLoginEmail(foundUser.email);
+    setPendingLoginPhone(foundUser.phone || '');
+    setVerifyFlow('login');
+    setShowVerify(true);
   };
 
   const handleRegister = (e: React.FormEvent) => {
@@ -94,10 +105,18 @@ export default function Login() {
       setError('Invalid code. Please try again.');
       return;
     }
-    if (pendingRegData) {
+    if (verifyFlow === 'register' && pendingRegData) {
       register(pendingRegData);
       setShowVerify(false);
       navigate('/buddy');
+    } else if (verifyFlow === 'login') {
+      const success = login(pendingLoginEmail);
+      setShowVerify(false);
+      if (success) {
+        navigate('/buddy');
+      } else {
+        setError('Login failed. Please try again.');
+      }
     }
   };
 
@@ -116,38 +135,48 @@ export default function Login() {
           <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-golf-600 to-golf-800 flex items-center justify-center">
             <ShieldCheck size={28} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Verify Your Account</h1>
-          <p className="text-sm text-gray-500 mt-1">Choose how to receive your 5-digit confirmation code</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {verifyFlow === 'login' ? 'Sign In Verification' : 'Verify Your Account'}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">Choose how to receive your 5-digit OTP code</p>
         </div>
 
         {/* Method selection */}
-        <div className="flex gap-3 mb-5">
-          <button
-            onClick={() => { setVerifyMethod('email'); setError(''); }}
-            className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all ${
-              verifyMethod === 'email' ? 'border-golf-600 bg-golf-50' : 'border-gray-200 bg-white'
-            }`}
-          >
-            <Mail size={24} className={verifyMethod === 'email' ? 'text-golf-700' : 'text-gray-400'} />
-            <span className={`text-sm font-semibold ${verifyMethod === 'email' ? 'text-golf-700' : 'text-gray-500'}`}>Email</span>
-            <span className="text-[10px] text-gray-400 px-2 text-center truncate w-full">{pendingRegData?.email}</span>
-          </button>
-          <button
-            onClick={() => { setVerifyMethod('phone'); setError(''); }}
-            className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all ${
-              verifyMethod === 'phone' ? 'border-golf-600 bg-golf-50' : 'border-gray-200 bg-white'
-            }`}
-          >
-            <Phone size={24} className={verifyMethod === 'phone' ? 'text-golf-700' : 'text-gray-400'} />
-            <span className={`text-sm font-semibold ${verifyMethod === 'phone' ? 'text-golf-700' : 'text-gray-500'}`}>Phone</span>
-            <span className="text-[10px] text-gray-400 px-2 text-center truncate w-full">{pendingRegData?.phone}</span>
-          </button>
-        </div>
+        {(() => {
+          const displayEmail = verifyFlow === 'login' ? pendingLoginEmail : pendingRegData?.email;
+          const displayPhone = verifyFlow === 'login' ? pendingLoginPhone : pendingRegData?.phone;
+          return (
+            <div className="flex gap-3 mb-5">
+              <button
+                onClick={() => { setVerifyMethod('email'); setError(''); }}
+                className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all ${
+                  verifyMethod === 'email' ? 'border-golf-600 bg-golf-50' : 'border-gray-200 bg-white'
+                }`}
+              >
+                <Mail size={24} className={verifyMethod === 'email' ? 'text-golf-700' : 'text-gray-400'} />
+                <span className={`text-sm font-semibold ${verifyMethod === 'email' ? 'text-golf-700' : 'text-gray-500'}`}>Email</span>
+                <span className="text-[10px] text-gray-400 px-2 text-center truncate w-full">{displayEmail}</span>
+              </button>
+              <button
+                onClick={() => { setVerifyMethod('phone'); setError(''); }}
+                className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all ${
+                  verifyMethod === 'phone' ? 'border-golf-600 bg-golf-50' : 'border-gray-200 bg-white'
+                }`}
+              >
+                <Phone size={24} className={verifyMethod === 'phone' ? 'text-golf-700' : 'text-gray-400'} />
+                <span className={`text-sm font-semibold ${verifyMethod === 'phone' ? 'text-golf-700' : 'text-gray-500'}`}>Phone</span>
+                <span className="text-[10px] text-gray-400 px-2 text-center truncate w-full">{displayPhone}</span>
+              </button>
+            </div>
+          );
+        })()}
 
         {/* Simulated code sent banner */}
         <div className="mb-5 p-3 rounded-xl bg-green-50 border border-green-200">
           <p className="text-xs font-semibold text-green-800">
-            Code sent to {verifyMethod === 'email' ? pendingRegData?.email : pendingRegData?.phone}
+            Code sent to {verifyMethod === 'email'
+              ? (verifyFlow === 'login' ? pendingLoginEmail : pendingRegData?.email)
+              : (verifyFlow === 'login' ? pendingLoginPhone : pendingRegData?.phone)}
           </p>
           <p className="text-[10px] text-green-600 mt-0.5">
             Demo code: <span className="font-mono font-bold text-green-800">{generatedCode}</span>
@@ -177,7 +206,7 @@ export default function Login() {
             disabled={enteredCode.length !== 5}
             className="w-full mt-4 py-3 rounded-xl bg-golf-700 text-white font-semibold text-sm hover:bg-golf-800 transition-colors disabled:opacity-40"
           >
-            Verify & Create Account
+            {verifyFlow === 'login' ? 'Verify & Sign In' : 'Verify & Create Account'}
           </button>
         </div>
 
@@ -192,7 +221,7 @@ export default function Login() {
             onClick={() => { setShowVerify(false); setError(''); }}
             className="text-xs font-semibold text-gray-500 hover:text-gray-700"
           >
-            Back to Registration
+            {verifyFlow === 'login' ? 'Back to Sign In' : 'Back to Registration'}
           </button>
         </div>
       </div>
@@ -249,12 +278,18 @@ export default function Login() {
 
   const handleDemoLogin = (demoEmail: string) => {
     setError('');
-    const success = login(demoEmail);
-    if (success) {
-      navigate('/buddy');
-    } else {
+    const foundUser = allUsers.find(u => u.email.toLowerCase() === demoEmail.toLowerCase());
+    if (!foundUser) {
       setError('Demo account not found');
+      return;
     }
+    const code = String(Math.floor(10000 + Math.random() * 90000));
+    setGeneratedCode(code);
+    setEnteredCode('');
+    setPendingLoginEmail(foundUser.email);
+    setPendingLoginPhone(foundUser.phone || '');
+    setVerifyFlow('login');
+    setShowVerify(true);
   };
 
   const handleQuickRegister = () => {
