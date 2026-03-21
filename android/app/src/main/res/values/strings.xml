@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GolfBuddy</string>
+    <string name="title_activity_main">GolfBuddy</string>
+    <string name="package_name">com.golfbuddy.app</string>
+    <string name="custom_url_scheme">com.golfbuddy.app</string>
+</resources>

@@ -1,0 +1,115 @@
+name: Build iOS (TestFlight)
+
+on:
+  workflow_dispatch:  # Manual trigger from GitHub UI
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      # To enable signing and TestFlight upload, add these secrets to your repo:
+      # - APPLE_CERTIFICATE_P12: Base64-encoded .p12 distribution certificate
+      # - APPLE_CERTIFICATE_PASSWORD: Password for the .p12 certificate
+      # - APPLE_PROVISIONING_PROFILE: Base64-encoded provisioning profile
+      # - APPLE_TEAM_ID: Your Apple Developer Team ID
+      # - APP_STORE_CONNECT_API_KEY_ID: App Store Connect API key ID
+      # - APP_STORE_CONNECT_ISSUER_ID: App Store Connect issuer ID
+      # - APP_STORE_CONNECT_API_KEY: Base64-encoded .p8 API key
+
+      - name: Install Apple certificate and provisioning profile
+        if: env.APPLE_CERTIFICATE_P12 != ''
+        env:
+          APPLE_CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_PROVISIONING_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+        run: |
+          # Create temp keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import certificate
+          CERT_PATH=$RUNNER_TEMP/certificate.p12
+          echo -n "$APPLE_CERTIFICATE_P12" | base64 --decode -o $CERT_PATH
+          security import $CERT_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Install provisioning profile
+          PP_PATH=$RUNNER_TEMP/profile.mobileprovision
+          echo -n "$APPLE_PROVISIONING_PROFILE" | base64 --decode -o $PP_PATH
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
+
+      - name: Build iOS archive
+        working-directory: ios/App
+        run: |
+          xcodebuild archive \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -archivePath $RUNNER_TEMP/GolfBuddy.xcarchive \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_ALLOWED=NO \
+            | tail -20
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: ${{ runner.temp }}/GolfBuddy.xcarchive
+          retention-days: 14
+
+      # Uncomment after adding App Store Connect API key secrets:
+      # - name: Export and upload to TestFlight
+      #   if: env.APP_STORE_CONNECT_API_KEY != ''
+      #   env:
+      #     APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+      #     APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+      #     APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      #   run: |
+      #     API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8
+      #     echo -n "$APP_STORE_CONNECT_API_KEY" | base64 --decode -o $API_KEY_PATH
+      #
+      #     xcodebuild -exportArchive \
+      #       -archivePath $RUNNER_TEMP/GolfBuddy.xcarchive \
+      #       -exportPath $RUNNER_TEMP/export \
+      #       -exportOptionsPlist ios/App/ExportOptions.plist \
+      #       -allowProvisioningUpdates \
+      #       -authenticationKeyPath $API_KEY_PATH \
+      #       -authenticationKeyID $APP_STORE_CONNECT_API_KEY_ID \
+      #       -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID
+      #
+      #     xcrun altool --upload-app \
+      #       -f $RUNNER_TEMP/export/App.ipa \
+      #       -t ios \
+      #       --apiKey $APP_STORE_CONNECT_API_KEY_ID \
+      #       --apiIssuer $APP_STORE_CONNECT_ISSUER_ID

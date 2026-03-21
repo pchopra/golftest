@@ -4,5 +4,6 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: '/golftest/',
+  // Use '/' for native (Capacitor), '/golftest/' for web hosting
+  base: process.env.VITE_BASE_PATH || '/',
 })

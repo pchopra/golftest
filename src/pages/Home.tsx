@@ -19,6 +19,7 @@ import {
   Bot,
 } from "lucide-react";
 import { useDragReorder } from "../hooks/useDragReorder";
+import { Storage } from "../utils/storage";
 
 // Stunning bright daytime golf course images (Pexels + Unsplash, free to use)
 const bgImages = [
@@ -154,7 +155,7 @@ const STORAGE_KEY = "golfbuddy-feature-order";
 
 function loadFeatureOrder(): Feature[] {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = Storage.getSync(STORAGE_KEY);
     if (!saved) return defaultFeatures;
     const ids: string[] = JSON.parse(saved);
     const byId = new Map(defaultFeatures.map(f => [f.id, f]));
@@ -169,7 +170,7 @@ function loadFeatureOrder(): Feature[] {
 }
 
 function saveFeatureOrder(features: Feature[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(features.map(f => f.id)));
+  Storage.set(STORAGE_KEY, JSON.stringify(features.map(f => f.id)));
 }
 
 export default function Home() {

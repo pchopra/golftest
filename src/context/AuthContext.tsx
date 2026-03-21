@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { User, BuddyAvailability, ChatGroup, ChatMessage, WeekendPoll, PollVote } from '../data/mockUsers';
 import { mockUsers, mockAvailability, mockChatGroups, mockWeekendPolls } from '../data/mockUsers';
+import { Storage } from '../utils/storage';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -32,52 +33,71 @@ const STORAGE_KEYS = {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.currentUser);
+    const stored = Storage.getSync(STORAGE_KEYS.currentUser);
     return stored ? JSON.parse(stored) : null;
   });
 
   const [allUsers, setAllUsers] = useState<User[]>(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.users);
+    const stored = Storage.getSync(STORAGE_KEYS.users);
     return stored ? JSON.parse(stored) : mockUsers;
   });
 
   const [availability, setAvailability] = useState<BuddyAvailability[]>(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.availability);
+    const stored = Storage.getSync(STORAGE_KEYS.availability);
     return stored ? JSON.parse(stored) : mockAvailability;
   });
 
   const [chatGroups, setChatGroups] = useState<ChatGroup[]>(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.chatGroups);
+    const stored = Storage.getSync(STORAGE_KEYS.chatGroups);
     return stored ? JSON.parse(stored) : mockChatGroups;
   });
 
   const [weekendPolls, setWeekendPolls] = useState<WeekendPoll[]>(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.weekendPolls);
+    const stored = Storage.getSync(STORAGE_KEYS.weekendPolls);
     return stored ? JSON.parse(stored) : mockWeekendPolls;
   });
 
+  // Hydrate from native storage on mount (async)
+  useEffect(() => {
+    async function hydrate() {
+      const [user, users, avail, groups, polls] = await Promise.all([
+        Storage.get(STORAGE_KEYS.currentUser),
+        Storage.get(STORAGE_KEYS.users),
+        Storage.get(STORAGE_KEYS.availability),
+        Storage.get(STORAGE_KEYS.chatGroups),
+        Storage.get(STORAGE_KEYS.weekendPolls),
+      ]);
+      if (user) setCurrentUser(JSON.parse(user));
+      if (users) setAllUsers(JSON.parse(users));
+      if (avail) setAvailability(JSON.parse(avail));
+      if (groups) setChatGroups(JSON.parse(groups));
+      if (polls) setWeekendPolls(JSON.parse(polls));
+    }
+    hydrate();
+  }, []);
+
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(currentUser));
+      Storage.set(STORAGE_KEYS.currentUser, JSON.stringify(currentUser));
     } else {
-      localStorage.removeItem(STORAGE_KEYS.currentUser);
+      Storage.remove(STORAGE_KEYS.currentUser);
     }
   }, [currentUser]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(allUsers));
+    Storage.set(STORAGE_KEYS.users, JSON.stringify(allUsers));
   }, [allUsers]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.availability, JSON.stringify(availability));
+    Storage.set(STORAGE_KEYS.availability, JSON.stringify(availability));
   }, [availability]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.chatGroups, JSON.stringify(chatGroups));
+    Storage.set(STORAGE_KEYS.chatGroups, JSON.stringify(chatGroups));
   }, [chatGroups]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.weekendPolls, JSON.stringify(weekendPolls));
+    Storage.set(STORAGE_KEYS.weekendPolls, JSON.stringify(weekendPolls));
   }, [weekendPolls]);
 
   const login = (email: string): boolean => {
