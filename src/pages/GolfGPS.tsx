@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Crosshair,
   Wind,
@@ -7,29 +7,62 @@ import {
   Droplets,
   ChevronLeft,
   ChevronRight,
+  Search,
+  MapPin,
+  Star,
+  ArrowLeft,
+  Phone,
+  Globe,
+  Navigation,
 } from "lucide-react";
+import { mockCourses, type GolfCourse } from "../data/mockCourses";
 
-const holeData = [
-  { hole: 1, par: 4, handicap: 7, champ: 412, mens: 385, womens: 340, distToPin: 156, front: 142, back: 171 },
-  { hole: 2, par: 3, handicap: 15, champ: 178, mens: 160, womens: 128, distToPin: 134, front: 120, back: 148 },
-  { hole: 3, par: 5, handicap: 1, champ: 547, mens: 520, womens: 468, distToPin: 213, front: 198, back: 228 },
-  { hole: 4, par: 4, handicap: 9, champ: 398, mens: 372, womens: 330, distToPin: 145, front: 131, back: 160 },
-  { hole: 5, par: 4, handicap: 3, champ: 435, mens: 410, womens: 365, distToPin: 172, front: 158, back: 186 },
-  { hole: 6, par: 3, handicap: 17, champ: 162, mens: 145, womens: 112, distToPin: 118, front: 105, back: 132 },
-  { hole: 7, par: 5, handicap: 5, champ: 532, mens: 505, womens: 455, distToPin: 198, front: 184, back: 215 },
-  { hole: 8, par: 4, handicap: 11, champ: 387, mens: 362, womens: 318, distToPin: 163, front: 149, back: 178 },
-  { hole: 9, par: 4, handicap: 13, champ: 405, mens: 380, womens: 335, distToPin: 141, front: 127, back: 155 },
-  { hole: 10, par: 4, handicap: 8, champ: 420, mens: 395, womens: 348, distToPin: 168, front: 154, back: 183 },
-  { hole: 11, par: 3, handicap: 16, champ: 185, mens: 168, womens: 135, distToPin: 152, front: 138, back: 166 },
-  { hole: 12, par: 5, handicap: 2, champ: 558, mens: 530, womens: 478, distToPin: 225, front: 210, back: 240 },
-  { hole: 13, par: 4, handicap: 10, champ: 392, mens: 368, womens: 322, distToPin: 137, front: 123, back: 151 },
-  { hole: 14, par: 4, handicap: 4, champ: 442, mens: 418, womens: 372, distToPin: 189, front: 175, back: 204 },
-  { hole: 15, par: 3, handicap: 18, champ: 155, mens: 138, womens: 108, distToPin: 112, front: 98, back: 126 },
-  { hole: 16, par: 5, handicap: 6, champ: 525, mens: 498, womens: 448, distToPin: 205, front: 191, back: 220 },
-  { hole: 17, par: 4, handicap: 12, champ: 378, mens: 355, womens: 310, distToPin: 148, front: 134, back: 162 },
-  { hole: 18, par: 4, handicap: 14, champ: 410, mens: 388, womens: 342, distToPin: 176, front: 162, back: 191 },
-];
+/* ------------------------------------------------------------------ */
+/*  Generate 18 holes of data from a course's par / yardage           */
+/* ------------------------------------------------------------------ */
+function generateHoleData(course: GolfCourse) {
+  const parSequences: Record<number, number[]> = {
+    68: [4, 3, 4, 4, 3, 4, 3, 4, 4, 4, 3, 4, 4, 3, 4, 3, 4, 4],
+    70: [4, 3, 5, 4, 4, 3, 4, 4, 4, 4, 3, 5, 4, 4, 3, 4, 4, 4],
+    71: [4, 3, 5, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 4, 4],
+    72: [4, 3, 5, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 5, 4, 4],
+  };
+  const pars = parSequences[course.par] ?? parSequences[72]!;
+  const totalParYds = pars.reduce((s, p) => s + (p === 3 ? 165 : p === 5 ? 530 : 400), 0);
+  const scale = course.yardage / totalParYds;
 
+  // Seed a simple deterministic random from course id
+  let seed = 0;
+  for (let i = 0; i < course.id.length; i++) seed = seed * 31 + course.id.charCodeAt(i);
+  const rand = () => { seed = (seed * 16807 + 0) % 2147483647; return (seed & 0xffff) / 0xffff; };
+
+  const handicaps = Array.from({ length: 18 }, (_, i) => i + 1).sort(() => rand() - 0.5);
+
+  return pars.map((par, i) => {
+    const baseYds = par === 3 ? 165 : par === 5 ? 530 : 400;
+    const champ = Math.round(baseYds * scale + (rand() - 0.5) * 20);
+    const mens = Math.round(champ * (0.92 + rand() * 0.04));
+    const womens = Math.round(mens * (0.85 + rand() * 0.03));
+    const distToPin = Math.round(80 + rand() * (champ * 0.4));
+    const front = Math.round(distToPin * (0.88 + rand() * 0.04));
+    const back = Math.round(distToPin * (1.06 + rand() * 0.06));
+    return {
+      hole: i + 1,
+      par,
+      handicap: handicaps[i],
+      champ,
+      mens,
+      womens,
+      distToPin,
+      front,
+      back,
+    };
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Club recommendation                                                */
+/* ------------------------------------------------------------------ */
 function getClubRecommendation(distance: number): { club: string; note: string } {
   if (distance >= 220) return { club: "3 Wood", note: "Full swing, consider wind" };
   if (distance >= 200) return { club: "4 Iron", note: "Smooth swing, aim left for wind" };
@@ -43,7 +76,118 @@ function getClubRecommendation(distance: number): { club: string; note: string }
   return { club: "SW", note: "Finesse shot, soft hands" };
 }
 
-const GolfGPS: React.FC = () => {
+/* ================================================================== */
+/*  Course Search Screen                                               */
+/* ================================================================== */
+function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void }) {
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return mockCourses;
+    return mockCourses.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.city.toLowerCase().includes(q) ||
+        c.state.toLowerCase().includes(q)
+    );
+  }, [query]);
+
+  return (
+    <div className="min-h-screen bg-golf-950 pb-24">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-golf-800 to-golf-600 px-4 py-6">
+        <div className="flex items-center gap-3">
+          <Crosshair className="h-7 w-7 text-white" />
+          <div>
+            <h1 className="text-2xl font-bold text-white">Golf GPS</h1>
+            <p className="text-sm text-golf-200">Select a course to begin</p>
+          </div>
+        </div>
+
+        {/* Search box */}
+        <div className="mt-4 relative">
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-golf-300"
+          />
+          <input
+            type="text"
+            placeholder="Search courses by name, city, or state..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-2.5 bg-white/15 text-white placeholder-golf-300 text-sm rounded-xl border border-white/20 focus:outline-none focus:border-white/50 focus:bg-white/20"
+          />
+        </div>
+      </div>
+
+      {/* Results */}
+      <div className="px-4 pt-4 space-y-3">
+        {filtered.length === 0 && (
+          <div className="flex flex-col items-center py-12">
+            <Search size={32} className="text-golf-600 mb-3" />
+            <p className="text-golf-400 text-sm">No courses found. Try a different search.</p>
+          </div>
+        )}
+
+        {filtered.map((course) => (
+          <button
+            key={course.id}
+            onClick={() => onSelect(course)}
+            className="w-full text-left rounded-2xl bg-golf-900 p-4 shadow-lg transition-colors hover:bg-golf-800 active:bg-golf-700"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-white truncate">
+                  {course.name}
+                </h3>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <MapPin size={12} className="text-golf-400 shrink-0" />
+                  <span className="text-xs text-golf-400">
+                    {course.city}, {course.state}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 ml-3 shrink-0">
+                <Star size={14} className="text-yellow-400 fill-yellow-400" />
+                <span className="text-sm font-semibold text-white">
+                  {course.rating}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-3 flex gap-3">
+              <span className="rounded-lg bg-golf-800 px-2.5 py-1 text-xs font-medium text-golf-300">
+                {course.holes} holes
+              </span>
+              <span className="rounded-lg bg-golf-800 px-2.5 py-1 text-xs font-medium text-golf-300">
+                Par {course.par}
+              </span>
+              <span className="rounded-lg bg-golf-800 px-2.5 py-1 text-xs font-medium text-golf-300">
+                {course.yardage.toLocaleString()} yds
+              </span>
+              <span className="rounded-lg bg-golf-800 px-2.5 py-1 text-xs font-medium text-golf-300">
+                {course.priceRange}
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/*  GPS Range-finder View (after course selection)                     */
+/* ================================================================== */
+function GPSView({
+  course,
+  onBack,
+}: {
+  course: GolfCourse;
+  onBack: () => void;
+}) {
+  const holeData = useMemo(() => generateHoleData(course), [course]);
   const [selectedHole, setSelectedHole] = useState(0);
   const [scores, setScores] = useState<number[]>(Array(18).fill(0));
 
@@ -66,25 +210,64 @@ const GolfGPS: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-golf-950 pb-24">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-golf-800 to-golf-600 px-4 py-6">
+      {/* Header with course info */}
+      <div className="bg-gradient-to-r from-golf-800 to-golf-600 px-4 py-4">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1 text-golf-200 text-sm mb-2 hover:text-white transition-colors"
+        >
+          <ArrowLeft size={16} />
+          Change Course
+        </button>
         <div className="flex items-center gap-3">
-          <Crosshair className="h-7 w-7 text-white" />
-          <div>
-            <h1 className="text-2xl font-bold text-white">Golf GPS</h1>
-            <p className="text-sm text-golf-200">Range Finder &amp; Course Info</p>
+          <Crosshair className="h-7 w-7 text-white shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-white truncate">
+              {course.name}
+            </h1>
+            <p className="text-sm text-golf-200">
+              {course.city}, {course.state} &middot; Par {course.par} &middot;{" "}
+              {course.yardage.toLocaleString()} yds
+            </p>
           </div>
+        </div>
+
+        {/* Quick-info chips */}
+        <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar">
+          {course.phone && (
+            <a
+              href={`tel:${course.phone}`}
+              className="shrink-0 flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs text-white"
+            >
+              <Phone size={12} /> Call
+            </a>
+          )}
+          {course.website && (
+            <a
+              href={course.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs text-white"
+            >
+              <Globe size={12} /> Website
+            </a>
+          )}
+          <a
+            href={`https://maps.google.com/?q=${course.lat},${course.lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs text-white"
+          >
+            <Navigation size={12} /> Directions
+          </a>
         </div>
       </div>
 
       <div className="space-y-4 px-4 pt-4">
         {/* Main Distance Display */}
         <div className="relative flex flex-col items-center rounded-2xl bg-golf-900 p-6 shadow-lg">
-          {/* Outer ring */}
           <div className="relative flex h-56 w-56 items-center justify-center rounded-full bg-gradient-to-br from-golf-700 to-golf-500 shadow-xl">
-            {/* Middle ring */}
             <div className="flex h-44 w-44 items-center justify-center rounded-full bg-golf-900 shadow-inner">
-              {/* Inner display */}
               <div className="flex h-36 w-36 flex-col items-center justify-center rounded-full bg-gradient-to-br from-golf-800 to-golf-700">
                 <Crosshair className="mb-1 h-5 w-5 text-golf-300" />
                 <span className="text-5xl font-extrabold leading-none text-white">
@@ -97,7 +280,6 @@ const GolfGPS: React.FC = () => {
             </div>
           </div>
 
-          {/* Front / Back indicators */}
           <div className="mt-4 flex w-full max-w-xs justify-between">
             <div className="flex flex-col items-center rounded-xl bg-golf-800 px-5 py-2">
               <span className="text-xs font-medium uppercase text-golf-400">Front</span>
@@ -168,7 +350,6 @@ const GolfGPS: React.FC = () => {
             Hole Selection
           </h3>
 
-          {/* Hole selector - horizontal scroll */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSelectedHole((prev) => Math.max(0, prev - 1))}
@@ -201,7 +382,6 @@ const GolfGPS: React.FC = () => {
             </button>
           </div>
 
-          {/* Hole details */}
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-golf-800 px-4 py-3 text-center">
               <span className="text-xs text-golf-400">Par</span>
@@ -213,7 +393,6 @@ const GolfGPS: React.FC = () => {
             </div>
           </div>
 
-          {/* Tee yardages */}
           <div className="mt-3 space-y-2">
             <div className="flex items-center justify-between rounded-xl bg-golf-800 px-4 py-2">
               <div className="flex items-center gap-2">
@@ -266,7 +445,6 @@ const GolfGPS: React.FC = () => {
               </button>
             </div>
           </div>
-          {/* Running total */}
           <div className="mt-3 flex justify-between border-t border-golf-800 pt-3">
             <span className="text-sm text-golf-400">Total Score</span>
             <div className="text-right">
@@ -290,6 +468,21 @@ const GolfGPS: React.FC = () => {
         </div>
       </div>
     </div>
+  );
+}
+
+/* ================================================================== */
+/*  Main GolfGPS component                                             */
+/* ================================================================== */
+const GolfGPS: React.FC = () => {
+  const [selectedCourse, setSelectedCourse] = useState<GolfCourse | null>(null);
+
+  if (!selectedCourse) {
+    return <CourseSearchScreen onSelect={setSelectedCourse} />;
+  }
+
+  return (
+    <GPSView course={selectedCourse} onBack={() => setSelectedCourse(null)} />
   );
 };
 
