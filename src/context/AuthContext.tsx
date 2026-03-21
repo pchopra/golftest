@@ -179,6 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     meta: Omit<User, 'id' | 'createdAt' | 'email'>
   ): Promise<{ error: string | null }> => {
+    console.log('[GolfBuddy] signUp request for:', email);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -195,7 +196,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       },
     });
-    if (error) return { error: error.message };
+    if (error) {
+      console.error('[GolfBuddy] signUp error:', JSON.stringify(error, null, 2));
+      return { error: error.message };
+    }
+    console.log('[GolfBuddy] signUp success, user:', data.user?.id, 'session:', !!data.session);
 
     // Profile is created automatically by the handle_new_user() DB trigger
     // which reads all fields from raw_user_meta_data (runs as security definer)
