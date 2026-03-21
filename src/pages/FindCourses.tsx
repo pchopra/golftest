@@ -11,6 +11,7 @@ import LocationPrompt from '../components/LocationPrompt';
 import HotDealCard from '../components/HotDealCard';
 
 type SortMode = 'nearest' | 'top-rated' | 'best-value';
+type RadiusFilter = 5 | 10 | null;
 
 export default function FindCourses() {
   const { latitude, longitude, loading, error, granted, requestLocation } = useGeolocation();
@@ -19,6 +20,7 @@ export default function FindCourses() {
   const [zipCode, setZipCode] = useState('');
   const [zipCoords, setZipCoords] = useState<{ lat: number; lng: number; city: string } | null>(null);
   const [zipError, setZipError] = useState('');
+  const [radiusFilter, setRadiusFilter] = useState<RadiusFilter>(10);
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
     return d.toISOString().split('T')[0];
@@ -58,22 +60,29 @@ export default function FindCourses() {
   }, [effectiveLat, effectiveLng]);
 
   const sortedCourses = useMemo(() => {
-    const sorted = [...coursesWithDistance];
+    // Filter by radius when a zip code search is active
+    let filtered = [...coursesWithDistance];
+    if (zipCoords && radiusFilter) {
+      filtered = filtered.filter(
+        ({ distance }) => distance !== null && distance <= radiusFilter
+      );
+    }
+
     switch (sortMode) {
       case 'nearest':
-        sorted.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999));
+        filtered.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999));
         break;
       case 'top-rated':
-        sorted.sort((a, b) => b.course.rating - a.course.rating);
+        filtered.sort((a, b) => b.course.rating - a.course.rating);
         break;
       case 'best-value':
-        sorted.sort(
+        filtered.sort(
           (a, b) => a.course.priceRange.length - b.course.priceRange.length
         );
         break;
     }
-    return sorted;
-  }, [coursesWithDistance, sortMode]);
+    return filtered;
+  }, [coursesWithDistance, sortMode, zipCoords, radiusFilter]);
 
   // Filter hot deals by selected date's day of week, sorted by distance
   const activeDeals = useMemo(() => {
@@ -96,7 +105,9 @@ export default function FindCourses() {
     : null;
 
   const locationLabel = zipCoords
-    ? `Showing courses near ${zipCoords.city}`
+    ? radiusFilter
+      ? `Courses within ${radiusFilter} mi of ${zipCoords.city}`
+      : `Showing all courses near ${zipCoords.city}`
     : granted && latitude
     ? error
       ? 'Showing Bay Area courses'
@@ -138,6 +149,36 @@ export default function FindCourses() {
         </div>
         {zipError && (
           <p className="text-red-300 text-xs mt-1.5 pl-1">{zipError}</p>
+        )}
+
+        {/* Radius filter — visible after zip search */}
+        {zipCoords && (
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-xs text-golf-200 font-medium">Radius:</span>
+            {([5, 10] as const).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRadiusFilter(r)}
+                className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${
+                  radiusFilter === r
+                    ? 'bg-white text-golf-800'
+                    : 'bg-white/15 text-white border border-white/20 hover:bg-white/25'
+                }`}
+              >
+                {r} mi
+              </button>
+            ))}
+            <button
+              onClick={() => setRadiusFilter(null)}
+              className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${
+                radiusFilter === null
+                  ? 'bg-white text-golf-800'
+                  : 'bg-white/15 text-white border border-white/20 hover:bg-white/25'
+              }`}
+            >
+              All
+            </button>
+          </div>
         )}
       </div>
 
@@ -211,14 +252,26 @@ export default function FindCourses() {
 
       {/* Course list */}
       <div>
-        {sortedCourses.map(({ course, distance }) => (
-          <CourseCard
-            key={course.id}
-            course={course}
-            distance={distance}
-            onSelect={setSelectedCourse}
-          />
-        ))}
+        {sortedCourses.length > 0 ? (
+          sortedCourses.map(({ course, distance }) => (
+            <CourseCard
+              key={course.id}
+              course={course}
+              distance={distance}
+              onSelect={setSelectedCourse}
+            />
+          ))
+        ) : zipCoords && radiusFilter ? (
+          <div className="mx-4 mt-4 bg-gray-50 rounded-2xl p-8 flex flex-col items-center">
+            <MapPin size={28} className="text-gray-300 mb-3" />
+            <p className="text-sm font-semibold text-gray-600 text-center">
+              No courses found within {radiusFilter} miles
+            </p>
+            <p className="text-xs text-gray-400 mt-1 text-center">
+              Try expanding the radius or searching a different zip code
+            </p>
+          </div>
+        ) : null}
       </div>
 
       {/* Detail sheet */}
