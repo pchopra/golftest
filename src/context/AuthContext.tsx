@@ -1,7 +1,9 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User, BuddyAvailability, ChatGroup, ChatMessage, WeekendPoll, PollVote } from '../data/mockUsers';
 import { mockUsers, mockAvailability, mockChatGroups, mockWeekendPolls } from '../data/mockUsers';
 import { Storage } from '../utils/storage';
+import { supabase } from '../lib/supabase';
+import type { Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -9,7 +11,11 @@ interface AuthContextType {
   availability: BuddyAvailability[];
   chatGroups: ChatGroup[];
   weekendPolls: WeekendPoll[];
+  session: Session | null;
+  loading: boolean;
   login: (email: string) => boolean;
+  loginWithSupabase: (email: string, password: string) => Promise<{ error: string | null }>;
+  registerWithSupabase: (email: string, password: string, meta: Omit<User, 'id' | 'createdAt' | 'email'>) => Promise<{ error: string | null }>;
   register: (user: Omit<User, 'id' | 'createdAt'>) => void;
   logout: () => void;
   setMyAvailability: (avail: Omit<BuddyAvailability, 'userId'>) => void;
@@ -31,7 +37,27 @@ const STORAGE_KEYS = {
   weekendPolls: 'golf-weekend-polls',
 };
 
+// Convert Supabase profile row to app User type
+function profileToUser(p: Record<string, unknown>): User {
+  return {
+    id: p.id as string,
+    firstName: p.first_name as string,
+    lastName: p.last_name as string,
+    email: p.email as string,
+    phone: (p.phone as string) || '',
+    skillLevel: (p.skill_level as User['skillLevel']) || 'Beginner',
+    gender: (p.gender as User['gender']) || 'Prefer not to say',
+    address: (p.address as string) || '',
+    lat: (p.lat as number) || 37.7749,
+    lng: (p.lng as number) || -122.4194,
+    createdAt: p.created_at ? new Date(p.created_at as string).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const stored = Storage.getSync(STORAGE_KEYS.currentUser);
     return stored ? JSON.parse(stored) : null;
@@ -57,6 +83,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return stored ? JSON.parse(stored) : mockWeekendPolls;
   });
 
+  // Load Supabase profile for authenticated user
+  const loadSupabaseProfile = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    if (data) {
+      const user = profileToUser(data);
+      setCurrentUser(user);
+      // Merge into allUsers if not present
+      setAllUsers(prev => {
+        const exists = prev.some(u => u.id === user.id);
+        return exists ? prev.map(u => u.id === user.id ? user : u) : [...prev, user];
+      });
+    }
+  }, []);
+
+  // Listen for Supabase auth changes
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+      if (s?.user) {
+        loadSupabaseProfile(s.user.id);
+      }
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      if (s?.user) {
+        loadSupabaseProfile(s.user.id);
+      } else if (_event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [loadSupabaseProfile]);
+
   // Hydrate from native storage on mount (async)
   useEffect(() => {
     async function hydrate() {
@@ -67,14 +133,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         Storage.get(STORAGE_KEYS.chatGroups),
         Storage.get(STORAGE_KEYS.weekendPolls),
       ]);
-      if (user) setCurrentUser(JSON.parse(user));
+      if (user && !session) setCurrentUser(JSON.parse(user));
       if (users) setAllUsers(JSON.parse(users));
       if (avail) setAvailability(JSON.parse(avail));
       if (groups) setChatGroups(JSON.parse(groups));
       if (polls) setWeekendPolls(JSON.parse(polls));
     }
     hydrate();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (currentUser) {
@@ -100,6 +166,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     Storage.set(STORAGE_KEYS.weekendPolls, JSON.stringify(weekendPolls));
   }, [weekendPolls]);
 
+  // Supabase email+password login
+  const loginWithSupabase = async (email: string, password: string): Promise<{ error: string | null }> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { error: error.message };
+    return { error: null };
+  };
+
+  // Supabase email+password registration
+  const registerWithSupabase = async (
+    email: string,
+    password: string,
+    meta: Omit<User, 'id' | 'createdAt' | 'email'>
+  ): Promise<{ error: string | null }> => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          first_name: meta.firstName,
+          last_name: meta.lastName,
+        },
+      },
+    });
+    if (error) return { error: error.message };
+
+    // Update profile with full data
+    if (data.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        first_name: meta.firstName,
+        last_name: meta.lastName,
+        email,
+        phone: meta.phone,
+        skill_level: meta.skillLevel,
+        gender: meta.gender,
+        address: meta.address,
+        lat: meta.lat,
+        lng: meta.lng,
+      });
+    }
+    return { error: null };
+  };
+
+  // Legacy mock login (kept for demo accounts)
   const login = (email: string): boolean => {
     const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (user) {
@@ -119,7 +229,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCurrentUser(newUser);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Sign out of Supabase if there's a session
+    if (session) {
+      await supabase.auth.signOut();
+    }
     setCurrentUser(null);
   };
 
@@ -130,6 +244,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const filtered = prev.filter(a => a.userId !== currentUser.id);
       return [...filtered, newAvail];
     });
+
+    // Sync to Supabase if authenticated
+    if (session) {
+      supabase.from('buddy_availability').upsert({
+        user_id: currentUser.id,
+        available_dates: avail.availableDates,
+        available_times: avail.availableTimes,
+        preferred_course_id: avail.preferredCourseId,
+        alternate_course_ids: avail.alternateCourseIds,
+        needs_ride: avail.needsRide || false,
+        can_offer_ride: avail.canOfferRide || false,
+        ride_note: avail.rideNote || '',
+        is_free_now: avail.isFreeNow || false,
+        free_now_until: avail.freeNowUntil || null,
+      }, { onConflict: 'user_id' });
+    }
   };
 
   const getMyAvailability = (): BuddyAvailability | undefined => {
@@ -161,7 +291,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             : a
         );
       }
-      // Create minimal availability if none exists
       return [...prev, {
         userId: currentUser.id,
         availableDates: [],
@@ -187,6 +316,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         g.id === groupId ? { ...g, messages: [...g.messages, msg] } : g
       )
     );
+
+    // Sync to Supabase if authenticated
+    if (session) {
+      supabase.from('chat_messages').insert({
+        group_id: groupId,
+        sender_id: currentUser.id,
+        text,
+      });
+    }
   };
 
   const createWeekendPoll = (groupId: string): WeekendPoll => {
@@ -229,7 +367,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       currentUser, allUsers, availability, chatGroups, weekendPolls,
-      login, register, logout,
+      session, loading,
+      login, loginWithSupabase, registerWithSupabase,
+      register, logout,
       setMyAvailability, getMyAvailability, toggleFreeNow,
       createChatGroup, sendMessage,
       createWeekendPoll, voteOnPoll,

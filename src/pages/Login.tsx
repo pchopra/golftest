@@ -1,28 +1,33 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, UserPlus, Mail, Phone, ShieldCheck } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Phone, ShieldCheck, Loader2 } from 'lucide-react';
 import type { SkillLevel, Gender } from '../data/mockUsers';
 
 type Tab = 'login' | 'register';
 type VerifyMethod = 'email' | 'phone';
 
 export default function Login() {
-  const { login, register, currentUser, allUsers, logout } = useAuth();
+  const {
+    login, register, loginWithSupabase, registerWithSupabase,
+    currentUser, allUsers, logout, session, loading: authLoading,
+  } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('login');
   const [error, setError] = useState('');
+  const [supaLoading, setSupaLoading] = useState(false);
 
   // Login fields
   const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
 
-  // Verification state (shared by login & register)
+  // Verification state (shared by login & register) — kept for demo accounts
   const [showVerify, setShowVerify] = useState(false);
   const [verifyFlow, setVerifyFlow] = useState<'login' | 'register'>('register');
   const [verifyMethod, setVerifyMethod] = useState<VerifyMethod>('email');
   const [generatedCode, setGeneratedCode] = useState('');
   const [enteredCode, setEnteredCode] = useState('');
-  const [pendingRegData, setPendingRegData] = useState<Parameters<typeof register>[0] | null>(null);
+  const [pendingRegData] = useState<Parameters<typeof register>[0] | null>(null);
   const [pendingLoginEmail, setPendingLoginEmail] = useState('');
   const [pendingLoginPhone, setPendingLoginPhone] = useState('');
 
@@ -30,6 +35,7 @@ export default function Login() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [skillLevel, setSkillLevel] = useState<SkillLevel>('Beginner');
   const [gender, setGender] = useState<Gender>('Prefer not to say');
@@ -41,36 +47,37 @@ export default function Login() {
   const skillLevels: SkillLevel[] = ['Beginner', 'Average', 'Skilled', 'Casual/Sporty'];
   const genders: Gender[] = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Supabase login handler
+  const handleSupabaseLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!loginEmail.trim()) {
       setError('Please enter your email');
       return;
     }
-    // Find user to check if account exists and get their phone
-    const foundUser = allUsers.find(u => u.email.toLowerCase() === loginEmail.trim().toLowerCase());
-    if (!foundUser) {
-      setError('No account found with that email. Please register first.');
+    if (!loginPassword.trim()) {
+      setError('Please enter your password');
       return;
     }
-    // Show OTP verification for login
-    const code = String(Math.floor(10000 + Math.random() * 90000));
-    setGeneratedCode(code);
-    setEnteredCode('');
-    setPendingLoginEmail(foundUser.email);
-    setPendingLoginPhone(foundUser.phone || '');
-    setVerifyFlow('login');
-    setShowVerify(true);
+    setSupaLoading(true);
+    const { error: err } = await loginWithSupabase(loginEmail.trim(), loginPassword);
+    setSupaLoading(false);
+    if (err) {
+      setError(err);
+      return;
+    }
+    navigate('/buddy');
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  // Supabase register handler
+  const handleSupabaseRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     const missing: string[] = [];
     if (!firstName.trim()) missing.push('First Name');
     if (!lastName.trim()) missing.push('Last Name');
     if (!email.trim()) missing.push('Email');
+    if (!password.trim()) missing.push('Password');
     if (!phone.trim()) missing.push('Phone Number');
     if (!street.trim()) missing.push('Street Address');
     if (!city.trim()) missing.push('City');
@@ -80,15 +87,15 @@ export default function Login() {
       setError(`Required: ${missing.join(', ')}`);
       return;
     }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
     const fullAddress = `${street.trim()}, ${city.trim()}, ${state.trim()} ${zip.trim()}`;
-    // Generate a 5-digit code and show verification screen
-    const code = String(Math.floor(10000 + Math.random() * 90000));
-    setGeneratedCode(code);
-    setEnteredCode('');
-    setPendingRegData({
+    setSupaLoading(true);
+    const { error: err } = await registerWithSupabase(email.trim(), password, {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      email: email.trim(),
       phone: phone.trim(),
       skillLevel,
       gender,
@@ -96,6 +103,28 @@ export default function Login() {
       lat: 37.7749 + (Math.random() - 0.5) * 0.2,
       lng: -122.4194 + (Math.random() - 0.5) * 0.2,
     });
+    setSupaLoading(false);
+    if (err) {
+      setError(err);
+      return;
+    }
+    navigate('/buddy');
+  };
+
+  // Legacy demo login with OTP flow
+  const handleDemoLogin = (demoEmail: string) => {
+    setError('');
+    const foundUser = allUsers.find(u => u.email.toLowerCase() === demoEmail.toLowerCase());
+    if (!foundUser) {
+      setError('Demo account not found');
+      return;
+    }
+    const code = String(Math.floor(10000 + Math.random() * 90000));
+    setGeneratedCode(code);
+    setEnteredCode('');
+    setPendingLoginEmail(foundUser.email);
+    setPendingLoginPhone(foundUser.phone || '');
+    setVerifyFlow('login');
     setShowVerify(true);
   };
 
@@ -127,7 +156,23 @@ export default function Login() {
     setError('');
   };
 
-  // Verification screen
+  const handleQuickRegister = () => {
+    const ts = Date.now().toString().slice(-4);
+    register({
+      firstName: 'Test',
+      lastName: `User${ts}`,
+      email: `test${ts}@demo.com`,
+      phone: `(415) 555-${ts}`,
+      skillLevel: 'Beginner',
+      gender: 'Prefer not to say',
+      address: '123 Market St, San Francisco, CA 94105',
+      lat: 37.7749 + (Math.random() - 0.5) * 0.2,
+      lng: -122.4194 + (Math.random() - 0.5) * 0.2,
+    });
+    navigate('/buddy');
+  };
+
+  // Verification screen (for demo accounts)
   if (showVerify) {
     return (
       <div className="px-4 pt-6 pb-36 overflow-y-auto">
@@ -243,6 +288,11 @@ export default function Login() {
               </h2>
               <p className="text-sm text-gray-500">{currentUser.email}</p>
               {currentUser.phone && <p className="text-xs text-gray-400">{currentUser.phone}</p>}
+              {session && (
+                <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-golf-100 text-golf-700 text-[10px] font-semibold">
+                  Supabase Auth
+                </span>
+              )}
             </div>
           </div>
 
@@ -266,7 +316,7 @@ export default function Login() {
           </div>
 
           <button
-            onClick={logout}
+            onClick={() => logout()}
             className="w-full py-3 rounded-xl bg-red-50 text-red-600 font-semibold text-sm hover:bg-red-100 transition-colors"
           >
             Sign Out
@@ -276,37 +326,13 @@ export default function Login() {
     );
   }
 
-  const handleDemoLogin = (demoEmail: string) => {
-    setError('');
-    const foundUser = allUsers.find(u => u.email.toLowerCase() === demoEmail.toLowerCase());
-    if (!foundUser) {
-      setError('Demo account not found');
-      return;
-    }
-    const code = String(Math.floor(10000 + Math.random() * 90000));
-    setGeneratedCode(code);
-    setEnteredCode('');
-    setPendingLoginEmail(foundUser.email);
-    setPendingLoginPhone(foundUser.phone || '');
-    setVerifyFlow('login');
-    setShowVerify(true);
-  };
-
-  const handleQuickRegister = () => {
-    const ts = Date.now().toString().slice(-4);
-    register({
-      firstName: 'Test',
-      lastName: `User${ts}`,
-      email: `test${ts}@demo.com`,
-      phone: `(415) 555-${ts}`,
-      skillLevel: 'Beginner',
-      gender: 'Prefer not to say',
-      address: '123 Market St, San Francisco, CA 94105',
-      lat: 37.7749 + (Math.random() - 0.5) * 0.2,
-      lng: -122.4194 + (Math.random() - 0.5) * 0.2,
-    });
-    navigate('/buddy');
-  };
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 size={32} className="animate-spin text-golf-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 pt-6 pb-36 overflow-y-auto">
@@ -349,7 +375,7 @@ export default function Login() {
 
       {tab === 'login' ? (
         <div className="space-y-4">
-          <form onSubmit={handleLogin} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <form onSubmit={handleSupabaseLogin} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Sign In</h2>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
@@ -364,17 +390,29 @@ export default function Login() {
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
               />
             </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={e => setLoginPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+              />
+            </div>
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-golf-700 text-white font-semibold text-sm hover:bg-golf-800 transition-colors"
+              disabled={supaLoading}
+              className="w-full py-3 rounded-xl bg-golf-700 text-white font-semibold text-sm hover:bg-golf-800 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
             >
+              {supaLoading && <Loader2 size={16} className="animate-spin" />}
               Sign In
             </button>
           </form>
 
           {/* Quick Demo Login */}
           <div className="bg-amber-50 rounded-2xl border border-amber-200 p-4">
-            <p className="text-xs font-bold text-amber-800 mb-3">Quick Demo Login</p>
+            <p className="text-xs font-bold text-amber-800 mb-3">Quick Demo Login (no password needed)</p>
             <div className="space-y-2">
               <button
                 onClick={() => handleDemoLogin('mike.j@email.com')}
@@ -393,7 +431,7 @@ export default function Login() {
         </div>
       ) : (
         <div className="space-y-4">
-          <form onSubmit={handleRegister} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <form onSubmit={handleSupabaseRegister} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Create Account</h2>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -432,6 +470,18 @@ export default function Login() {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="your@email.com"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Password <span className="text-red-500">*</span></label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="At least 6 characters"
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
                 />
               </div>
@@ -535,8 +585,10 @@ export default function Login() {
 
             <button
               type="submit"
-              className="w-full mt-5 py-3 rounded-xl bg-golf-700 text-white font-semibold text-sm hover:bg-golf-800 transition-colors"
+              disabled={supaLoading}
+              className="w-full mt-5 py-3 rounded-xl bg-golf-700 text-white font-semibold text-sm hover:bg-golf-800 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
             >
+              {supaLoading && <Loader2 size={16} className="animate-spin" />}
               Create Account
             </button>
           </form>
@@ -544,7 +596,7 @@ export default function Login() {
           {/* Quick Register for Testing */}
           <div className="bg-blue-50 rounded-2xl border border-blue-200 p-4">
             <p className="text-xs font-bold text-blue-800 mb-2">Quick Test Account</p>
-            <p className="text-[10px] text-blue-600 mb-3">Create a test account instantly without filling out the form</p>
+            <p className="text-[10px] text-blue-600 mb-3">Create a test account instantly without filling out the form (local only)</p>
             <button
               onClick={handleQuickRegister}
               className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors"
