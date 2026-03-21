@@ -60,9 +60,9 @@ export default function FindCourses() {
   }, [effectiveLat, effectiveLng]);
 
   const sortedCourses = useMemo(() => {
-    // Filter by radius when a zip code search is active
+    // Filter by radius when any location is available
     let filtered = [...coursesWithDistance];
-    if (zipCoords && radiusFilter) {
+    if (effectiveLat && effectiveLng && radiusFilter) {
       filtered = filtered.filter(
         ({ distance }) => distance !== null && distance <= radiusFilter
       );
@@ -82,16 +82,16 @@ export default function FindCourses() {
         break;
     }
     return filtered;
-  }, [coursesWithDistance, sortMode, zipCoords, radiusFilter]);
+  }, [coursesWithDistance, sortMode, effectiveLat, effectiveLng, radiusFilter]);
 
   // Nearest courses fallback — shown when radius filter yields no results
   const nearestFallback = useMemo(() => {
-    if (sortedCourses.length > 0 || !zipCoords || !radiusFilter) return [];
+    if (sortedCourses.length > 0 || (!effectiveLat && !effectiveLng) || !radiusFilter) return [];
     return [...coursesWithDistance]
       .filter(({ distance }) => distance !== null)
       .sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999))
       .slice(0, 3);
-  }, [sortedCourses, coursesWithDistance, zipCoords, radiusFilter]);
+  }, [sortedCourses, coursesWithDistance, effectiveLat, effectiveLng, radiusFilter]);
 
   // Filter hot deals by selected date's day of week, sorted by distance
   const activeDeals = useMemo(() => {
@@ -160,8 +160,8 @@ export default function FindCourses() {
           <p className="text-red-300 text-xs mt-1.5 pl-1">{zipError}</p>
         )}
 
-        {/* Radius filter — visible after zip search */}
-        {zipCoords && (
+        {/* Radius filter — visible when any location is available */}
+        {(zipCoords || (granted && latitude)) && (
           <div className="mt-3 flex items-center gap-2">
             <span className="text-xs text-golf-200 font-medium">Radius:</span>
             {([5, 10] as const).map((r) => (
@@ -270,14 +270,14 @@ export default function FindCourses() {
               onSelect={setSelectedCourse}
             />
           ))
-        ) : zipCoords && radiusFilter && nearestFallback.length > 0 ? (
+        ) : (effectiveLat && effectiveLng) && radiusFilter && nearestFallback.length > 0 ? (
           <>
             <div className="mx-4 mt-2 mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200">
               <p className="text-sm font-semibold text-amber-800">
                 No courses found within {radiusFilter} miles
               </p>
               <p className="text-xs text-amber-600 mt-0.5">
-                Here are the nearest golf courses to {zipCoords.city}
+                Here are the nearest golf courses{zipCoords ? ` to ${zipCoords.city}` : ''}
               </p>
             </div>
             {nearestFallback.map(({ course, distance }) => (
