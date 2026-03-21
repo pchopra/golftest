@@ -108,8 +108,33 @@ export default function Login() {
     );
   }
 
+  const handleDemoLogin = (demoEmail: string) => {
+    setError('');
+    const success = login(demoEmail);
+    if (success) {
+      navigate('/buddy');
+    } else {
+      setError('Demo account not found');
+    }
+  };
+
+  const handleQuickRegister = () => {
+    const ts = Date.now().toString().slice(-4);
+    register({
+      firstName: 'Test',
+      lastName: `User${ts}`,
+      email: `test${ts}@demo.com`,
+      skillLevel: 'Beginner',
+      gender: 'Prefer not to say',
+      address: 'San Francisco, CA',
+      lat: 37.7749 + (Math.random() - 0.5) * 0.2,
+      lng: -122.4194 + (Math.random() - 0.5) * 0.2,
+    });
+    navigate('/buddy');
+  };
+
   return (
-    <div className="px-4 pt-6 pb-28">
+    <div className="px-4 pt-6 pb-36 overflow-y-auto">
       {/* Header */}
       <div className="text-center mb-6">
         <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-golf-600 to-golf-800 flex items-center justify-center">
@@ -148,126 +173,164 @@ export default function Login() {
       )}
 
       {tab === 'login' ? (
-        <form onSubmit={handleLogin} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Sign In</h2>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-            <input
-              type="email"
-              value={loginEmail}
-              onChange={e => setLoginEmail(e.target.value)}
-              placeholder="Enter your email"
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full py-3 rounded-xl bg-golf-700 text-white font-semibold text-sm hover:bg-golf-800 transition-colors"
-          >
-            Sign In
-          </button>
-          <p className="text-xs text-gray-400 text-center mt-3">
-            Demo: try mike.j@email.com or sarah.chen@email.com
-          </p>
-        </form>
-      ) : (
-        <form onSubmit={handleRegister} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Create Account</h2>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">First Name</label>
-                <input
-                  type="text"
-                  value={firstName}
-                  onChange={e => setFirstName(e.target.value)}
-                  placeholder="First name"
-                  className="w-full px-3 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={e => setLastName(e.target.value)}
-                  placeholder="Last name"
-                  className="w-full px-3 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <div>
+        <div className="space-y-4">
+          <form onSubmit={handleLogin} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Sign In</h2>
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
               <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Skill Level</label>
-              <div className="grid grid-cols-2 gap-2">
-                {skillLevels.map(level => (
-                  <button
-                    key={level}
-                    type="button"
-                    onClick={() => setSkillLevel(level)}
-                    className={`py-2.5 px-3 rounded-xl border text-sm font-medium transition-all ${
-                      skillLevel === level
-                        ? 'border-golf-600 bg-golf-50 text-golf-700'
-                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                    }`}
-                  >
-                    {level}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Gender</label>
-              <div className="grid grid-cols-2 gap-2">
-                {genders.map(g => (
-                  <button
-                    key={g}
-                    type="button"
-                    onClick={() => setGender(g)}
-                    className={`py-2.5 px-3 rounded-xl border text-sm font-medium transition-all ${
-                      gender === g
-                        ? 'border-golf-600 bg-golf-50 text-golf-700'
-                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                    }`}
-                  >
-                    {g}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Home Address</label>
-              <input
                 type="text"
-                value={address}
-                onChange={e => setAddress(e.target.value)}
-                placeholder="123 Main St, City, State"
+                inputMode="email"
+                autoCapitalize="off"
+                autoCorrect="off"
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
+                placeholder="Enter your email"
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
               />
-              <p className="text-xs text-gray-400 mt-1">Used to find courses and buddies near you</p>
+            </div>
+            <button
+              type="submit"
+              className="w-full py-3 rounded-xl bg-golf-700 text-white font-semibold text-sm hover:bg-golf-800 transition-colors"
+            >
+              Sign In
+            </button>
+          </form>
+
+          {/* Quick Demo Login */}
+          <div className="bg-amber-50 rounded-2xl border border-amber-200 p-4">
+            <p className="text-xs font-bold text-amber-800 mb-3">Quick Demo Login</p>
+            <div className="space-y-2">
+              <button
+                onClick={() => handleDemoLogin('mike.j@email.com')}
+                className="w-full py-2.5 rounded-xl bg-amber-500 text-white font-semibold text-sm hover:bg-amber-600 transition-colors"
+              >
+                Sign in as Mike Johnson
+              </button>
+              <button
+                onClick={() => handleDemoLogin('sarah.chen@email.com')}
+                className="w-full py-2.5 rounded-xl bg-amber-500 text-white font-semibold text-sm hover:bg-amber-600 transition-colors"
+              >
+                Sign in as Sarah Chen
+              </button>
             </div>
           </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <form onSubmit={handleRegister} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Create Account</h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">First Name</label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={e => setFirstName(e.target.value)}
+                    placeholder="First name"
+                    className="w-full px-3 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={e => setLastName(e.target.value)}
+                    placeholder="Last name"
+                    className="w-full px-3 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
 
-          <button
-            type="submit"
-            className="w-full mt-5 py-3 rounded-xl bg-golf-700 text-white font-semibold text-sm hover:bg-golf-800 transition-colors"
-          >
-            Create Account
-          </button>
-        </form>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <input
+                  type="text"
+                  inputMode="email"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Skill Level</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {skillLevels.map(level => (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setSkillLevel(level)}
+                      className={`py-2.5 px-3 rounded-xl border text-sm font-medium transition-all ${
+                        skillLevel === level
+                          ? 'border-golf-600 bg-golf-50 text-golf-700'
+                          : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Gender</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {genders.map(g => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setGender(g)}
+                      className={`py-2.5 px-3 rounded-xl border text-sm font-medium transition-all ${
+                        gender === g
+                          ? 'border-golf-600 bg-golf-50 text-golf-700'
+                          : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Home Address</label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={e => setAddress(e.target.value)}
+                  placeholder="123 Main St, City, State"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-400 mt-1">Used to find courses and buddies near you</p>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full mt-5 py-3 rounded-xl bg-golf-700 text-white font-semibold text-sm hover:bg-golf-800 transition-colors"
+            >
+              Create Account
+            </button>
+          </form>
+
+          {/* Quick Register for Testing */}
+          <div className="bg-blue-50 rounded-2xl border border-blue-200 p-4">
+            <p className="text-xs font-bold text-blue-800 mb-2">Quick Test Account</p>
+            <p className="text-[10px] text-blue-600 mb-3">Create a test account instantly without filling out the form</p>
+            <button
+              onClick={handleQuickRegister}
+              className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors"
+            >
+              Create Test Account & Start
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
