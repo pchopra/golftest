@@ -14,6 +14,7 @@ import GolfNews from './pages/GolfNews';
 import EquipmentDeals from './pages/EquipmentDeals';
 import GolfVideos from './pages/GolfVideos';
 import GolfPodcasts from './pages/GolfPodcasts';
+import RoboBuddy from './pages/RoboBuddy';
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/deals" element={<EquipmentDeals />} />
           <Route path="/videos" element={<GolfVideos />} />
           <Route path="/podcasts" element={<GolfPodcasts />} />
+          <Route path="/robobuddy" element={<RoboBuddy />} />
         </Routes>
         <BottomTabBar />
       </div>
