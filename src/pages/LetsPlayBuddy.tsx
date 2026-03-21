@@ -4,18 +4,18 @@ import { useAuth } from '../context/AuthContext';
 import { mockCourses } from '../data/mockCourses';
 import { hotDeals } from '../data/hotDeals';
 import { getDistanceMiles } from '../utils/distance';
-import type { BuddyAvailability, User, ChatGroup } from '../data/mockUsers';
+import type { BuddyAvailability, User, ChatGroup, WeekendPoll } from '../data/mockUsers';
 import {
   Calendar, Clock, MapPin, Users, MessageCircle, Send,
   ChevronRight, Plus, Check, Star, DollarSign, ArrowLeft,
-  UserCheck, Users2, Filter, Flame,
+  UserCheck, Users2, Filter, Flame, BarChart3, Car, Eye,
 } from 'lucide-react';
 
 type MainTab = 'buddies' | 'chat';
 type AvailFilter = 'all' | 'two' | 'four' | 'moreThanTwo';
 
 export default function LetsPlayBuddy() {
-  const { currentUser, allUsers, availability, chatGroups, setMyAvailability, getMyAvailability, createChatGroup, sendMessage } = useAuth();
+  const { currentUser, allUsers, availability, chatGroups, weekendPolls, setMyAvailability, getMyAvailability, createChatGroup, sendMessage, createWeekendPoll, voteOnPoll } = useAuth();
   const navigate = useNavigate();
 
   const [mainTab, setMainTab] = useState<MainTab>('buddies');
@@ -26,6 +26,16 @@ export default function LetsPlayBuddy() {
   const [chatInput, setChatInput] = useState('');
   const [showGroupAvailability, setShowGroupAvailability] = useState(false);
   const [groupAvailFilter, setGroupAvailFilter] = useState<AvailFilter>('all');
+  const [showPollPanel, setShowPollPanel] = useState(false);
+  const [showAvailViewer, setShowAvailViewer] = useState(false);
+  const [viewDate, setViewDate] = useState('');
+  const [viewTime, setViewTime] = useState('');
+
+  // Poll voting state
+  const [pollSelDates, setPollSelDates] = useState<string[]>([]);
+  const [pollSelTimes, setPollSelTimes] = useState<string[]>([]);
+  const [pollNeedsRide, setPollNeedsRide] = useState(false);
+  const [pollCanOffer, setPollCanOffer] = useState(false);
 
   // Availability form state
   const [selDates, setSelDates] = useState<string[]>([]);
@@ -417,6 +427,63 @@ export default function LetsPlayBuddy() {
           )}
         </div>
 
+        {/* Action Buttons: Poll, Ride-sharing, Availability */}
+        <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex gap-2">
+          <button
+            onClick={() => { setShowPollPanel(!showPollPanel); setShowAvailViewer(false); }}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-all ${showPollPanel ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+          >
+            <BarChart3 size={14} /> Polls
+          </button>
+          <button
+            onClick={() => { setShowAvailViewer(!showAvailViewer); setShowPollPanel(false); }}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-all ${showAvailViewer ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+          >
+            <Eye size={14} /> Who's Free?
+          </button>
+        </div>
+
+        {/* Weekend Poll Panel */}
+        {showPollPanel && (
+          <WeekendPollPanel
+            group={group}
+            polls={weekendPolls.filter(p => p.groupId === group.id)}
+            currentUserId={currentUser.id}
+            getUserById={getUserById}
+            formatDate={formatDate}
+            availability={availability}
+            onCreatePoll={() => createWeekendPoll(group.id)}
+            onVote={(pollId) => {
+              voteOnPoll(pollId, {
+                selectedDates: pollSelDates,
+                selectedTimes: pollSelTimes,
+                needsRide: pollNeedsRide,
+                canOfferRide: pollCanOffer,
+              });
+              setPollSelDates([]); setPollSelTimes([]); setPollNeedsRide(false); setPollCanOffer(false);
+            }}
+            pollSelDates={pollSelDates} setPollSelDates={setPollSelDates}
+            pollSelTimes={pollSelTimes} setPollSelTimes={setPollSelTimes}
+            pollNeedsRide={pollNeedsRide} setPollNeedsRide={setPollNeedsRide}
+            pollCanOffer={pollCanOffer} setPollCanOffer={setPollCanOffer}
+          />
+        )}
+
+        {/* Group Availability Viewer */}
+        {showAvailViewer && (
+          <GroupAvailabilityViewer
+            group={group}
+            availability={availability}
+            getUserById={getUserById}
+            currentUserId={currentUser.id}
+            formatDate={formatDate}
+            viewDate={viewDate} setViewDate={setViewDate}
+            viewTime={viewTime} setViewTime={setViewTime}
+            upcomingDates={upcomingDates}
+            timeSlots={timeSlots}
+          />
+        )}
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           {group.messages.map(msg => {
@@ -722,6 +789,289 @@ function AvailabilityResults({
             ))}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ——— Weekend Poll Panel Component ———
+function WeekendPollPanel({
+  group, polls, currentUserId, getUserById, formatDate, availability,
+  onCreatePoll, onVote,
+  pollSelDates, setPollSelDates, pollSelTimes, setPollSelTimes,
+  pollNeedsRide, setPollNeedsRide, pollCanOffer, setPollCanOffer,
+}: {
+  group: ChatGroup;
+  polls: WeekendPoll[];
+  currentUserId: string;
+  getUserById: (id: string) => User | undefined;
+  formatDate: (iso: string) => string;
+  availability: BuddyAvailability[];
+  onCreatePoll: () => void;
+  onVote: (pollId: string) => void;
+  pollSelDates: string[]; setPollSelDates: (d: string[]) => void;
+  pollSelTimes: string[]; setPollSelTimes: (t: string[]) => void;
+  pollNeedsRide: boolean; setPollNeedsRide: (v: boolean) => void;
+  pollCanOffer: boolean; setPollCanOffer: (v: boolean) => void;
+}) {
+  const openPolls = polls.filter(p => p.status === 'open');
+
+  return (
+    <div className="px-4 py-3 bg-white border-b border-gray-100 max-h-[50vh] overflow-y-auto animate-fade-in">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+          <BarChart3 size={15} className="text-green-700" /> Weekend Polls
+        </h4>
+        <button
+          onClick={onCreatePoll}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 transition-colors"
+        >
+          <Plus size={13} /> New Poll
+        </button>
+      </div>
+
+      {openPolls.length === 0 ? (
+        <p className="text-xs text-gray-400 text-center py-4">No polls yet. Create one to plan your weekend round!</p>
+      ) : (
+        <div className="space-y-4">
+          {openPolls.map(poll => {
+            const myVote = poll.votes.find(v => v.userId === currentUserId);
+            const creator = getUserById(poll.createdBy);
+            return (
+              <div key={poll.id} className="rounded-xl border border-green-200 bg-green-50 p-3">
+                <p className="text-xs font-semibold text-green-800 mb-2">
+                  Weekend of {formatDate(poll.weekendDate)} · by {creator?.firstName || 'Unknown'}
+                </p>
+
+                {/* Date options */}
+                <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Pick Dates</p>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {poll.dateOptions.map(date => {
+                    const voteCount = poll.votes.filter(v => v.selectedDates.includes(date)).length;
+                    const selected = pollSelDates.includes(date);
+                    return (
+                      <button
+                        key={date}
+                        onClick={() => setPollSelDates(selected ? pollSelDates.filter(d => d !== date) : [...pollSelDates, date])}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${selected ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-700'}`}
+                      >
+                        {formatDate(date)} <span className="opacity-60">({voteCount})</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Time options */}
+                <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Pick Times</p>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {poll.timeOptions.map(time => {
+                    const voteCount = poll.votes.filter(v => v.selectedTimes.includes(time)).length;
+                    const selected = pollSelTimes.includes(time);
+                    return (
+                      <button
+                        key={time}
+                        onClick={() => setPollSelTimes(selected ? pollSelTimes.filter(t => t !== time) : [...pollSelTimes, time])}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${selected ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-700'}`}
+                      >
+                        {time} <span className="opacity-60">({voteCount})</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Ride-sharing */}
+                <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">
+                  <Car size={11} className="inline mr-0.5 -mt-0.5" /> Ride Sharing
+                </p>
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={() => setPollNeedsRide(!pollNeedsRide)}
+                    className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${pollNeedsRide ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-700'}`}
+                  >
+                    Need a ride
+                  </button>
+                  <button
+                    onClick={() => setPollCanOffer(!pollCanOffer)}
+                    className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${pollCanOffer ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-700'}`}
+                  >
+                    Can offer ride
+                  </button>
+                </div>
+
+                {/* Vote button */}
+                <button
+                  onClick={() => onVote(poll.id)}
+                  disabled={pollSelDates.length === 0 || pollSelTimes.length === 0}
+                  className="w-full py-2 rounded-xl bg-green-700 text-white text-xs font-bold hover:bg-green-800 transition-colors disabled:opacity-40"
+                >
+                  {myVote ? 'Update Vote' : 'Submit Vote'}
+                </button>
+
+                {/* Existing votes summary */}
+                {poll.votes.length > 0 && (
+                  <div className="mt-3 space-y-1.5">
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase">Votes ({poll.votes.length})</p>
+                    {poll.votes.map(vote => {
+                      const voter = getUserById(vote.userId);
+                      return (
+                        <div key={vote.userId} className="flex items-center gap-2 bg-white rounded-lg px-2 py-1.5">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-golf-400 to-golf-700 flex items-center justify-center text-white text-[9px] font-bold shrink-0">
+                            {voter?.firstName[0]}{voter?.lastName[0]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-gray-800">{voter?.firstName}</p>
+                            <p className="text-[10px] text-gray-500 truncate">
+                              {vote.selectedDates.map(d => formatDate(d)).join(', ')} · {vote.selectedTimes.join(', ')}
+                            </p>
+                          </div>
+                          <div className="flex gap-1 shrink-0">
+                            {vote.needsRide && <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">Needs ride</span>}
+                            {vote.canOfferRide && <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-medium">Can drive</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ——— Group Availability Viewer Component ———
+function GroupAvailabilityViewer({
+  group, availability, getUserById, currentUserId, formatDate,
+  viewDate, setViewDate, viewTime, setViewTime,
+  upcomingDates, timeSlots,
+}: {
+  group: ChatGroup;
+  availability: BuddyAvailability[];
+  getUserById: (id: string) => User | undefined;
+  currentUserId: string;
+  formatDate: (iso: string) => string;
+  viewDate: string; setViewDate: (d: string) => void;
+  viewTime: string; setViewTime: (t: string) => void;
+  upcomingDates: string[];
+  timeSlots: string[];
+}) {
+  const availableMembers = group.memberIds
+    .map(id => ({ user: getUserById(id), avail: availability.find(a => a.userId === id) }))
+    .filter(({ user, avail }) => {
+      if (!user || !avail) return false;
+      const dateMatch = !viewDate || avail.availableDates.includes(viewDate);
+      const timeMatch = !viewTime || avail.availableTimes.includes(viewTime);
+      return dateMatch && timeMatch;
+    });
+
+  const unavailableMembers = group.memberIds
+    .map(id => ({ user: getUserById(id), avail: availability.find(a => a.userId === id) }))
+    .filter(({ user, avail }) => {
+      if (!user) return false;
+      if (!avail) return true;
+      if (viewDate && !avail.availableDates.includes(viewDate)) return true;
+      if (viewTime && !avail.availableTimes.includes(viewTime)) return true;
+      return false;
+    });
+
+  return (
+    <div className="px-4 py-3 bg-white border-b border-gray-100 max-h-[50vh] overflow-y-auto animate-fade-in">
+      <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-1.5">
+        <Eye size={15} className="text-green-700" /> Who's Free for Tee Time?
+      </h4>
+
+      {/* Date picker */}
+      <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Select a Day</p>
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {upcomingDates.map(date => (
+          <button
+            key={date}
+            onClick={() => setViewDate(viewDate === date ? '' : date)}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${viewDate === date ? 'bg-green-700 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          >
+            {formatDate(date)}
+          </button>
+        ))}
+      </div>
+
+      {/* Time picker */}
+      <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Select a Time</p>
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {timeSlots.map(time => (
+          <button
+            key={time}
+            onClick={() => setViewTime(viewTime === time ? '' : time)}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${viewTime === time ? 'bg-green-700 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          >
+            {time}
+          </button>
+        ))}
+      </div>
+
+      {!viewDate && !viewTime ? (
+        <p className="text-xs text-gray-400 text-center py-2">Pick a day or time to see who's available.</p>
+      ) : (
+        <>
+          {/* Available members */}
+          <div className="mb-3">
+            <p className="text-xs font-bold text-green-800 mb-2 flex items-center gap-1">
+              <Check size={13} /> Available ({availableMembers.length})
+            </p>
+            {availableMembers.length === 0 ? (
+              <p className="text-xs text-gray-400 ml-5">No one is free at this time.</p>
+            ) : (
+              <div className="space-y-2">
+                {availableMembers.map(({ user, avail }) => (
+                  <div key={user!.id} className="flex items-center gap-2.5 bg-green-50 border border-green-200 rounded-xl px-3 py-2">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-golf-400 to-golf-700 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                      {user!.firstName[0]}{user!.lastName[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-900">{user!.firstName} {user!.lastName}</p>
+                      <p className="text-[10px] text-gray-500">{user!.skillLevel}</p>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      {avail?.needsRide && <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">Needs ride</span>}
+                      {avail?.canOfferRide && <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-medium">Can drive</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Unavailable members */}
+          {unavailableMembers.length > 0 && (
+            <div>
+              <p className="text-xs font-bold text-red-700 mb-2">Not Available ({unavailableMembers.length})</p>
+              <div className="space-y-1.5">
+                {unavailableMembers.map(({ user }) => (
+                  <div key={user!.id} className="flex items-center gap-2.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 opacity-60">
+                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                      {user!.firstName[0]}{user!.lastName[0]}
+                    </div>
+                    <p className="text-xs text-gray-500">{user!.firstName} {user!.lastName}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tee time suggestion */}
+          {availableMembers.length >= 2 && (
+            <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
+              <p className="text-xs font-bold text-amber-800">
+                {availableMembers.length >= 4 ? 'Full foursome ready!' : `${availableMembers.length} players ready!`}
+              </p>
+              <p className="text-[10px] text-amber-700 mt-0.5">
+                {viewDate && formatDate(viewDate)} {viewTime && `at ${viewTime}`} — Send a message to confirm the tee time.
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
