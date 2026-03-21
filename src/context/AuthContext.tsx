@@ -197,31 +197,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (error) return { error: error.message };
 
-    // Update profile with full data (trigger may have already created a row)
-    if (data.user) {
-      // Small delay to let the DB trigger finish inserting the basic profile row
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const { error: profileError } = await supabase.from('profiles').upsert(
-        {
-          id: data.user.id,
-          first_name: meta.firstName,
-          last_name: meta.lastName,
-          email,
-          phone: meta.phone,
-          skill_level: meta.skillLevel,
-          gender: meta.gender,
-          address: meta.address,
-          lat: meta.lat,
-          lng: meta.lng,
-        },
-        { onConflict: 'id' }
-      );
-      if (profileError) {
-        console.error('Profile upsert error:', profileError);
-        return { error: profileError.message };
-      }
-    }
+    // Profile is created automatically by the handle_new_user() DB trigger
+    // which reads all fields from raw_user_meta_data (runs as security definer)
     return { error: null };
   };
 
