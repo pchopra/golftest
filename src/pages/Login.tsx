@@ -21,7 +21,10 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [skillLevel, setSkillLevel] = useState<SkillLevel>('Beginner');
   const [gender, setGender] = useState<Gender>('Prefer not to say');
-  const [address, setAddress] = useState('');
+  const [street, setStreet] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [zip, setZip] = useState('');
 
   const skillLevels: SkillLevel[] = ['Beginner', 'Average', 'Skilled', 'Casual/Sporty'];
   const genders: Gender[] = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
@@ -44,17 +47,26 @@ export default function Login() {
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !address.trim()) {
-      setError('Please fill in all fields');
+    const missing: string[] = [];
+    if (!firstName.trim()) missing.push('First Name');
+    if (!lastName.trim()) missing.push('Last Name');
+    if (!email.trim()) missing.push('Email');
+    if (!street.trim()) missing.push('Street Address');
+    if (!city.trim()) missing.push('City');
+    if (!state.trim()) missing.push('State');
+    if (!zip.trim()) missing.push('ZIP Code');
+    if (missing.length > 0) {
+      setError(`Required: ${missing.join(', ')}`);
       return;
     }
+    const fullAddress = `${street.trim()}, ${city.trim()}, ${state.trim()} ${zip.trim()}`;
     register({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
       skillLevel,
       gender,
-      address: address.trim(),
+      address: fullAddress,
       lat: 37.7749 + (Math.random() - 0.5) * 0.2,
       lng: -122.4194 + (Math.random() - 0.5) * 0.2,
     });
@@ -126,7 +138,7 @@ export default function Login() {
       email: `test${ts}@demo.com`,
       skillLevel: 'Beginner',
       gender: 'Prefer not to say',
-      address: 'San Francisco, CA',
+      address: '123 Market St, San Francisco, CA 94105',
       lat: 37.7749 + (Math.random() - 0.5) * 0.2,
       lng: -122.4194 + (Math.random() - 0.5) * 0.2,
     });
@@ -223,9 +235,10 @@ export default function Login() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">First Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">First Name <span className="text-red-500">*</span></label>
                   <input
                     type="text"
+                    required
                     value={firstName}
                     onChange={e => setFirstName(e.target.value)}
                     placeholder="First name"
@@ -233,9 +246,10 @@ export default function Login() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Last Name <span className="text-red-500">*</span></label>
                   <input
                     type="text"
+                    required
                     value={lastName}
                     onChange={e => setLastName(e.target.value)}
                     placeholder="Last name"
@@ -245,12 +259,13 @@ export default function Login() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   inputMode="email"
                   autoCapitalize="off"
                   autoCorrect="off"
+                  required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="your@email.com"
@@ -259,7 +274,7 @@ export default function Login() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Skill Level</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Skill Level <span className="text-red-500">*</span></label>
                 <div className="grid grid-cols-2 gap-2">
                   {skillLevels.map(level => (
                     <button
@@ -279,7 +294,7 @@ export default function Login() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Gender</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Gender <span className="text-red-500">*</span></label>
                 <div className="grid grid-cols-2 gap-2">
                   {genders.map(g => (
                     <button
@@ -298,16 +313,47 @@ export default function Login() {
                 </div>
               </div>
 
+              {/* Address Section */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Home Address</label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={e => setAddress(e.target.value)}
-                  placeholder="123 Main St, City, State"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-400 mt-1">Used to find courses and buddies near you</p>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Home Address <span className="text-red-500">*</span></label>
+                <p className="text-xs text-gray-400 mb-2">Used to find courses and buddies near you</p>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    required
+                    value={street}
+                    onChange={e => setStreet(e.target.value)}
+                    placeholder="Street address"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      required
+                      value={city}
+                      onChange={e => setCity(e.target.value)}
+                      placeholder="City"
+                      className="w-full px-3 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+                    />
+                    <input
+                      type="text"
+                      required
+                      value={state}
+                      onChange={e => setState(e.target.value)}
+                      placeholder="State"
+                      className="w-full px-3 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    value={zip}
+                    onChange={e => setZip(e.target.value)}
+                    placeholder="ZIP Code"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+                  />
+                </div>
               </div>
             </div>
 
