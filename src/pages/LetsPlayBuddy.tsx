@@ -509,7 +509,7 @@ export default function LetsPlayBuddy() {
         <button
           onClick={() => setMainTab('buddies')}
           className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            mainTab === 'buddies' ? 'bg-white text-golf-700 shadow-sm' : 'text-gray-500'
+            mainTab === 'buddies' ? 'bg-green-700 text-white shadow-sm' : 'text-gray-500'
           }`}
         >
           <Users size={15} className="inline mr-1 -mt-0.5" />
@@ -518,7 +518,7 @@ export default function LetsPlayBuddy() {
         <button
           onClick={() => setMainTab('chat')}
           className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            mainTab === 'chat' ? 'bg-white text-golf-700 shadow-sm' : 'text-gray-500'
+            mainTab === 'chat' ? 'bg-green-700 text-white shadow-sm' : 'text-gray-500'
           }`}
         >
           <MessageCircle size={15} className="inline mr-1 -mt-0.5" />
