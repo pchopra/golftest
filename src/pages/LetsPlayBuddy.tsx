@@ -796,7 +796,7 @@ function AvailabilityResults({
 
 // ——— Weekend Poll Panel Component ———
 function WeekendPollPanel({
-  group, polls, currentUserId, getUserById, formatDate, availability,
+  group: _group, polls, currentUserId, getUserById, formatDate, availability: _availability,
   onCreatePoll, onVote,
   pollSelDates, setPollSelDates, pollSelTimes, setPollSelTimes,
   pollNeedsRide, setPollNeedsRide, pollCanOffer, setPollCanOffer,
@@ -944,7 +944,7 @@ function WeekendPollPanel({
 
 // ——— Group Availability Viewer Component ———
 function GroupAvailabilityViewer({
-  group, availability, getUserById, currentUserId, formatDate,
+  group, availability, getUserById, currentUserId: _currentUserId, formatDate,
   viewDate, setViewDate, viewTime, setViewTime,
   upcomingDates, timeSlots,
 }: {
