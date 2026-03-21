@@ -164,6 +164,23 @@ export default function LetsPlayBuddy() {
     setChatInput('');
   };
 
+  const handleGroupChat = () => {
+    // Close panels and scroll to the chat input
+    setShowPollPanel(false);
+    setShowAvailViewer(false);
+  };
+
+  const handleGroupCall = (memberIds: string[]) => {
+    // Build a conference-style call with the first member's phone number
+    const members = memberIds
+      .filter(id => id !== currentUser.id)
+      .map(id => getUserById(id))
+      .filter(Boolean);
+    if (members.length > 0 && members[0]?.phone) {
+      window.location.href = `tel:${members[0].phone}`;
+    }
+  };
+
   const filteredBuddies = getFilteredBuddies(availFilter);
   const commonDates = getCommonDates(filteredBuddies);
   const commonTimes = getCommonTimes(filteredBuddies);
@@ -462,6 +479,8 @@ export default function LetsPlayBuddy() {
               });
               setPollSelDates([]); setPollSelTimes([]); setPollNeedsRide(false); setPollCanOffer(false);
             }}
+            onGroupChat={handleGroupChat}
+            onGroupCall={handleGroupCall}
             pollSelDates={pollSelDates} setPollSelDates={setPollSelDates}
             pollSelTimes={pollSelTimes} setPollSelTimes={setPollSelTimes}
             pollNeedsRide={pollNeedsRide} setPollNeedsRide={setPollNeedsRide}
@@ -481,6 +500,8 @@ export default function LetsPlayBuddy() {
             viewTime={viewTime} setViewTime={setViewTime}
             upcomingDates={upcomingDates}
             timeSlots={timeSlots}
+            onGroupChat={handleGroupChat}
+            onGroupCall={handleGroupCall}
           />
         )}
 
@@ -796,8 +817,8 @@ function AvailabilityResults({
 
 // ——— Weekend Poll Panel Component ———
 function WeekendPollPanel({
-  group: _group, polls, currentUserId, getUserById, formatDate, availability: _availability,
-  onCreatePoll, onVote,
+  group, polls, currentUserId, getUserById, formatDate, availability: _availability,
+  onCreatePoll, onVote, onGroupChat, onGroupCall,
   pollSelDates, setPollSelDates, pollSelTimes, setPollSelTimes,
   pollNeedsRide, setPollNeedsRide, pollCanOffer, setPollCanOffer,
 }: {
@@ -809,6 +830,8 @@ function WeekendPollPanel({
   availability: BuddyAvailability[];
   onCreatePoll: () => void;
   onVote: (pollId: string) => void;
+  onGroupChat: () => void;
+  onGroupCall: (memberIds: string[]) => void;
   pollSelDates: string[]; setPollSelDates: (d: string[]) => void;
   pollSelTimes: string[]; setPollSelTimes: (t: string[]) => void;
   pollNeedsRide: boolean; setPollNeedsRide: (v: boolean) => void;
@@ -914,10 +937,10 @@ function WeekendPollPanel({
                       <p className="text-[10px] font-semibold text-gray-500 uppercase">Votes ({poll.votes.length})</p>
                       {poll.votes.length > 0 && (
                         <div className="flex gap-1.5">
-                          <button className="flex items-center gap-0.5 text-[9px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-2 py-1 hover:bg-green-100 transition-colors">
+                          <button onClick={onGroupChat} className="flex items-center gap-0.5 text-[9px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-2 py-1 hover:bg-green-100 transition-colors">
                             <MessageCircle size={11} /> Group Chat
                           </button>
-                          <button className="flex items-center gap-0.5 text-[9px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1 hover:bg-blue-100 transition-colors">
+                          <button onClick={() => onGroupCall(group.memberIds)} className="flex items-center gap-0.5 text-[9px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1 hover:bg-blue-100 transition-colors">
                             <Phone size={11} /> Group Call
                           </button>
                         </div>
@@ -958,7 +981,7 @@ function WeekendPollPanel({
 function GroupAvailabilityViewer({
   group, availability, getUserById, currentUserId: _currentUserId, formatDate,
   viewDate, setViewDate, viewTime, setViewTime,
-  upcomingDates, timeSlots,
+  upcomingDates, timeSlots, onGroupChat, onGroupCall,
 }: {
   group: ChatGroup;
   availability: BuddyAvailability[];
@@ -969,6 +992,8 @@ function GroupAvailabilityViewer({
   viewTime: string; setViewTime: (t: string) => void;
   upcomingDates: string[];
   timeSlots: string[];
+  onGroupChat: () => void;
+  onGroupCall: (memberIds: string[]) => void;
 }) {
   const availableMembers = group.memberIds
     .map(id => ({ user: getUserById(id), avail: availability.find(a => a.userId === id) }))
@@ -1035,10 +1060,10 @@ function GroupAvailabilityViewer({
               </p>
               {availableMembers.length > 0 && (
                 <div className="flex gap-1.5">
-                  <button className="flex items-center gap-0.5 text-[9px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-2 py-1 hover:bg-green-100 transition-colors">
+                  <button onClick={onGroupChat} className="flex items-center gap-0.5 text-[9px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-2 py-1 hover:bg-green-100 transition-colors">
                     <MessageCircle size={11} /> Group Chat
                   </button>
-                  <button className="flex items-center gap-0.5 text-[9px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1 hover:bg-blue-100 transition-colors">
+                  <button onClick={() => onGroupCall(group.memberIds)} className="flex items-center gap-0.5 text-[9px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1 hover:bg-blue-100 transition-colors">
                     <Phone size={11} /> Group Call
                   </button>
                 </div>
