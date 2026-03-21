@@ -186,25 +186,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: {
           first_name: meta.firstName,
           last_name: meta.lastName,
+          phone: meta.phone || '',
+          skill_level: meta.skillLevel || 'Beginner',
+          gender: meta.gender || 'Prefer not to say',
+          address: meta.address || '',
+          lat: meta.lat ?? 37.7749,
+          lng: meta.lng ?? -122.4194,
         },
       },
     });
     if (error) return { error: error.message };
 
-    // Update profile with full data
+    // Update profile with full data (trigger may have already created a row)
     if (data.user) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        first_name: meta.firstName,
-        last_name: meta.lastName,
-        email,
-        phone: meta.phone,
-        skill_level: meta.skillLevel,
-        gender: meta.gender,
-        address: meta.address,
-        lat: meta.lat,
-        lng: meta.lng,
-      });
+      // Small delay to let the DB trigger finish inserting the basic profile row
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const { error: profileError } = await supabase.from('profiles').upsert(
+        {
+          id: data.user.id,
+          first_name: meta.firstName,
+          last_name: meta.lastName,
+          email,
+          phone: meta.phone,
+          skill_level: meta.skillLevel,
+          gender: meta.gender,
+          address: meta.address,
+          lat: meta.lat,
+          lng: meta.lng,
+        },
+        { onConflict: 'id' }
+      );
+      if (profileError) {
+        console.error('Profile upsert error:', profileError);
+        return { error: profileError.message };
+      }
     }
     return { error: null };
   };

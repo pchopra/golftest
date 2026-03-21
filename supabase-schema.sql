@@ -132,12 +132,18 @@ create policy "Users can update own votes" on poll_votes for update using (auth.
 create or replace function handle_new_user()
 returns trigger as $$
 begin
-  insert into profiles (id, first_name, last_name, email)
+  insert into profiles (id, first_name, last_name, email, phone, skill_level, gender, address, lat, lng)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'first_name', ''),
     coalesce(new.raw_user_meta_data->>'last_name', ''),
-    new.email
+    new.email,
+    coalesce(new.raw_user_meta_data->>'phone', ''),
+    coalesce(new.raw_user_meta_data->>'skill_level', 'Beginner'),
+    coalesce(new.raw_user_meta_data->>'gender', 'Prefer not to say'),
+    coalesce(new.raw_user_meta_data->>'address', ''),
+    coalesce((new.raw_user_meta_data->>'lat')::double precision, 37.7749),
+    coalesce((new.raw_user_meta_data->>'lng')::double precision, -122.4194)
   );
   return new;
 end;
