@@ -470,21 +470,26 @@ export default function LetsPlayBuddy() {
 
   // ——— Main View ———
   return (
-    <div className="px-4 pt-4 pb-28">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Let's Play Buddy</h1>
-          <p className="text-xs text-gray-500">Find partners, plan tee times together</p>
+    <div className="pb-28">
+      {/* Banner */}
+      <div className="relative bg-gradient-to-br from-green-700 via-green-600 to-emerald-500 px-5 pt-6 pb-5 rounded-b-3xl shadow-md mb-4">
+        <div className="absolute inset-0 opacity-10 rounded-b-3xl" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'30\' cy=\'30\' r=\'8\' fill=\'%23fff\' fill-opacity=\'0.3\'/%3E%3Ccircle cx=\'10\' cy=\'10\' r=\'3\' fill=\'%23fff\' fill-opacity=\'0.2\'/%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'4\' fill=\'%23fff\' fill-opacity=\'0.2\'/%3E%3C/svg%3E")', backgroundSize: '60px 60px' }} />
+        <div className="relative flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-white">Let's Play Buddy</h1>
+            <p className="text-xs text-green-100 mt-0.5">Find partners, plan tee times together</p>
+          </div>
         </div>
         <button
           onClick={() => setShowSetAvailability(true)}
-          className="px-3 py-2 rounded-xl bg-golf-700 text-white text-xs font-semibold hover:bg-golf-800 transition-colors"
+          className="relative mt-4 w-full py-3 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 transition-colors shadow-sm flex items-center justify-center gap-2"
         >
-          <Calendar size={14} className="inline mr-1 -mt-0.5" />
+          <Calendar size={16} />
           Set Availability
         </button>
       </div>
+
+      <div className="px-4">
 
       {/* My Availability Summary */}
       {getMyAvailability() && (
@@ -590,6 +595,7 @@ export default function LetsPlayBuddy() {
           )}
         </>
       )}
+      </div>
     </div>
   );
 }
