@@ -84,6 +84,15 @@ export default function FindCourses() {
     return filtered;
   }, [coursesWithDistance, sortMode, zipCoords, radiusFilter]);
 
+  // Nearest courses fallback — shown when radius filter yields no results
+  const nearestFallback = useMemo(() => {
+    if (sortedCourses.length > 0 || !zipCoords || !radiusFilter) return [];
+    return [...coursesWithDistance]
+      .filter(({ distance }) => distance !== null)
+      .sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999))
+      .slice(0, 3);
+  }, [sortedCourses, coursesWithDistance, zipCoords, radiusFilter]);
+
   // Filter hot deals by selected date's day of week, sorted by distance
   const activeDeals = useMemo(() => {
     const date = new Date(selectedDate + 'T12:00:00');
@@ -261,16 +270,25 @@ export default function FindCourses() {
               onSelect={setSelectedCourse}
             />
           ))
-        ) : zipCoords && radiusFilter ? (
-          <div className="mx-4 mt-4 bg-gray-50 rounded-2xl p-8 flex flex-col items-center">
-            <MapPin size={28} className="text-gray-300 mb-3" />
-            <p className="text-sm font-semibold text-gray-600 text-center">
-              No courses found within {radiusFilter} miles
-            </p>
-            <p className="text-xs text-gray-400 mt-1 text-center">
-              Try expanding the radius or searching a different zip code
-            </p>
-          </div>
+        ) : zipCoords && radiusFilter && nearestFallback.length > 0 ? (
+          <>
+            <div className="mx-4 mt-2 mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200">
+              <p className="text-sm font-semibold text-amber-800">
+                No courses found within {radiusFilter} miles
+              </p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                Here are the nearest golf courses to {zipCoords.city}
+              </p>
+            </div>
+            {nearestFallback.map(({ course, distance }) => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                distance={distance}
+                onSelect={setSelectedCourse}
+              />
+            ))}
+          </>
         ) : null}
       </div>
 
