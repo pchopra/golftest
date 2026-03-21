@@ -574,17 +574,17 @@ export default function LetsPlayBuddy() {
                     <button
                       key={group.id}
                       onClick={() => setActiveGroupId(group.id)}
-                      className="w-full bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-left hover:border-golf-300 transition-all"
+                      className="w-full bg-green-700 rounded-xl shadow-sm p-4 text-left hover:bg-green-800 transition-all"
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <h3 className="text-sm font-bold text-gray-900">{group.name}</h3>
-                        <ChevronRight size={16} className="text-gray-400" />
+                        <h3 className="text-sm font-bold text-white">{group.name}</h3>
+                        <ChevronRight size={16} className="text-green-200" />
                       </div>
-                      <p className="text-xs text-gray-500 mb-1.5">
+                      <p className="text-xs text-green-100 mb-1.5">
                         {group.memberIds.map(id => getUserById(id)?.firstName).filter(Boolean).join(', ')}
                       </p>
                       {lastMsg && (
-                        <p className="text-xs text-gray-400 truncate">
+                        <p className="text-xs text-green-200 truncate">
                           <span className="font-medium">{lastSender?.firstName}:</span> {lastMsg.text}
                         </p>
                       )}
