@@ -33,6 +33,9 @@ export default function LetsPlayBuddy() {
   const [viewTime, setViewTime] = useState('');
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
+  const [deleteRevealedGroupId, setDeleteRevealedGroupId] = useState<string | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartX = useRef(0);
 
   // Poll voting state
   const [pollSelDates, setPollSelDates] = useState<string[]>([]);
@@ -806,32 +809,67 @@ export default function LetsPlayBuddy() {
                 .map(group => {
                   const lastMsg = group.messages[group.messages.length - 1];
                   const lastSender = lastMsg ? getUserById(lastMsg.senderId) : null;
+                  const isRevealed = deleteRevealedGroupId === group.id;
                   return (
-                    <button
-                      key={group.id}
-                      onClick={() => setActiveGroupId(group.id)}
-                      className="w-full bg-green-700 rounded-xl shadow-sm p-4 text-left hover:bg-green-800 transition-all"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className="text-sm font-bold text-white">{group.name}</h3>
-                        <ChevronRight size={16} className="text-green-200" />
+                    <div key={group.id} className="relative overflow-hidden rounded-xl">
+                      {/* Delete button behind the card */}
+                      <div className="absolute right-0 top-0 bottom-0 flex items-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteGroup(group.id);
+                            setDeleteRevealedGroupId(null);
+                          }}
+                          className="h-full px-5 bg-red-600 text-white flex flex-col items-center justify-center gap-1 hover:bg-red-700 transition-colors"
+                        >
+                          <Trash2 size={18} />
+                          <span className="text-[10px] font-semibold">Delete</span>
+                        </button>
                       </div>
-                      <p className="text-xs text-green-100 mb-1.5">
-                        {group.memberIds.map(id => getUserById(id)?.firstName).filter(Boolean).join(', ')}
-                      </p>
-                      {(group.teeDate || group.teeTime) && (
-                        <p className="text-[10px] text-green-200 mb-1 flex items-center gap-1">
-                          {group.teeDate && <><Calendar size={10} /> {formatDate(group.teeDate)}</>}
-                          {group.teeDate && group.teeTime && ' @ '}
-                          {group.teeTime && <><Clock size={10} /> {group.teeTime}</>}
+                      {/* Swipeable card */}
+                      <button
+                        onClick={() => {
+                          if (isRevealed) { setDeleteRevealedGroupId(null); return; }
+                          setActiveGroupId(group.id);
+                        }}
+                        onTouchStart={(e) => {
+                          touchStartX.current = e.touches[0].clientX;
+                          longPressTimer.current = setTimeout(() => {
+                            setDeleteRevealedGroupId(isRevealed ? null : group.id);
+                          }, 500);
+                        }}
+                        onTouchMove={(e) => {
+                          if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+                          const dx = e.touches[0].clientX - touchStartX.current;
+                          if (dx < -50 && !isRevealed) setDeleteRevealedGroupId(group.id);
+                          if (dx > 50 && isRevealed) setDeleteRevealedGroupId(null);
+                        }}
+                        onTouchEnd={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+                        onContextMenu={(e) => { e.preventDefault(); setDeleteRevealedGroupId(isRevealed ? null : group.id); }}
+                        className={`w-full bg-green-700 rounded-xl shadow-sm p-4 text-left hover:bg-green-800 transition-all duration-200 relative ${isRevealed ? '-translate-x-20' : 'translate-x-0'}`}
+                        style={{ transition: 'transform 0.2s ease-out' }}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <h3 className="text-sm font-bold text-white">{group.name}</h3>
+                          <ChevronRight size={16} className="text-green-200" />
+                        </div>
+                        <p className="text-xs text-green-100 mb-1.5">
+                          {group.memberIds.map(id => getUserById(id)?.firstName).filter(Boolean).join(', ')}
                         </p>
-                      )}
-                      {lastMsg && (
-                        <p className="text-xs text-green-200 truncate">
-                          <span className="font-medium">{lastSender?.firstName}:</span> {lastMsg.text}
-                        </p>
-                      )}
-                    </button>
+                        {(group.teeDate || group.teeTime) && (
+                          <p className="text-[10px] text-green-200 mb-1 flex items-center gap-1">
+                            {group.teeDate && <><Calendar size={10} /> {formatDate(group.teeDate)}</>}
+                            {group.teeDate && group.teeTime && ' @ '}
+                            {group.teeTime && <><Clock size={10} /> {group.teeTime}</>}
+                          </p>
+                        )}
+                        {lastMsg && (
+                          <p className="text-xs text-green-200 truncate">
+                            <span className="font-medium">{lastSender?.firstName}:</span> {lastMsg.text}
+                          </p>
+                        )}
+                      </button>
+                    </div>
                   );
                 })}
             </div>

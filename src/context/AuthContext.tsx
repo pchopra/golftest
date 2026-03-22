@@ -344,8 +344,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setChatGroups(prev => {
       const group = prev.find(g => g.id === groupId);
       if (!group) return prev;
-      const isAdmin = (group.adminIds || []).includes(currentUser.id);
-      if (!isAdmin) return prev;
+      if (!group.memberIds.includes(currentUser.id)) return prev;
       return prev.filter(g => g.id !== groupId);
     });
     setWeekendPolls(prev => prev.filter(p => p.groupId !== groupId));
