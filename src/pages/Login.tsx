@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, UserPlus, Loader2 } from 'lucide-react';
+import type { SkillLevel, Gender } from '../data/mockUsers';
 
 type Tab = 'login' | 'register';
 
 export default function Login() {
   const {
-    loginWithSupabase, registerWithSupabase,
-    currentUser, session, loading: authLoading, logout,
+    login, register, loginWithSupabase, registerWithSupabase,
+    currentUser, allUsers, session, loading: authLoading, logout,
   } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('login');
@@ -27,10 +28,45 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [skillLevel, setSkillLevel] = useState<SkillLevel>('Beginner');
+  const [gender, setGender] = useState<Gender>('Prefer not to say');
   const [street, setStreet] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zip, setZip] = useState('');
+
+  const skillLevels: SkillLevel[] = ['Beginner', 'Average', 'Skilled', 'Casual/Sporty'];
+  const genders: Gender[] = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
+
+  // Legacy demo login
+  const handleDemoLogin = (demoEmail: string) => {
+    setError('');
+    setSuccessMsg('');
+    const foundUser = allUsers.find(u => u.email.toLowerCase() === demoEmail.toLowerCase());
+    if (!foundUser) {
+      setError('Demo account not found');
+      return;
+    }
+    login(foundUser.email);
+    navigate('/buddy');
+  };
+
+  // Quick test account
+  const handleQuickRegister = () => {
+    const ts = Date.now().toString().slice(-4);
+    register({
+      firstName: 'Test',
+      lastName: `User${ts}`,
+      email: `test${ts}@demo.com`,
+      phone: `(415) 555-${ts}`,
+      skillLevel: 'Beginner',
+      gender: 'Prefer not to say',
+      address: '123 Market St, San Francisco, CA 94105',
+      lat: 37.7749 + (Math.random() - 0.5) * 0.2,
+      lng: -122.4194 + (Math.random() - 0.5) * 0.2,
+    });
+    navigate('/buddy');
+  };
 
   // Supabase login handler
   const handleSupabaseLogin = async (e: React.FormEvent) => {
@@ -88,8 +124,8 @@ export default function Login() {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       phone: phone.trim(),
-      skillLevel: 'Beginner',
-      gender: 'Prefer not to say',
+      skillLevel,
+      gender,
       address: fullAddress,
       lat: 37.7749 + (Math.random() - 0.5) * 0.2,
       lng: -122.4194 + (Math.random() - 0.5) * 0.2,
@@ -214,6 +250,7 @@ export default function Login() {
       )}
 
       {tab === 'login' ? (
+        <div className="space-y-4">
         <form onSubmit={handleSupabaseLogin} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <h2 className="text-lg font-bold text-gray-900 mb-4">Sign In</h2>
           <div className="mb-4">
@@ -248,7 +285,28 @@ export default function Login() {
             Sign In
           </button>
         </form>
+
+        {/* Quick Demo Login */}
+        <div className="bg-amber-50 rounded-2xl border border-amber-200 p-4">
+          <p className="text-xs font-bold text-amber-800 mb-3">Quick Demo Login (no password needed)</p>
+          <div className="space-y-2">
+            <button
+              onClick={() => handleDemoLogin('mike.j@email.com')}
+              className="w-full py-2.5 rounded-xl bg-amber-500 text-white font-semibold text-sm hover:bg-amber-600 transition-colors"
+            >
+              Sign in as Mike Johnson
+            </button>
+            <button
+              onClick={() => handleDemoLogin('sarah.chen@email.com')}
+              className="w-full py-2.5 rounded-xl bg-amber-500 text-white font-semibold text-sm hover:bg-amber-600 transition-colors"
+            >
+              Sign in as Sarah Chen
+            </button>
+          </div>
+        </div>
+        </div>
       ) : (
+        <div className="space-y-4">
         <form onSubmit={handleSupabaseRegister} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <h2 className="text-lg font-bold text-gray-900 mb-4">Create Account</h2>
           <div className="space-y-4">
@@ -324,6 +382,46 @@ export default function Login() {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Skill Level</label>
+              <div className="grid grid-cols-2 gap-2">
+                {skillLevels.map(level => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setSkillLevel(level)}
+                    className={`py-2.5 px-3 rounded-xl border text-sm font-medium transition-all ${
+                      skillLevel === level
+                        ? 'border-golf-600 bg-golf-50 text-golf-700'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Gender</label>
+              <div className="grid grid-cols-2 gap-2">
+                {genders.map(g => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setGender(g)}
+                    className={`py-2.5 px-3 rounded-xl border text-sm font-medium transition-all ${
+                      gender === g
+                        ? 'border-golf-600 bg-golf-50 text-golf-700'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Home Address <span className="text-red-500">*</span></label>
               <p className="text-xs text-gray-400 mb-2">Used to find courses and buddies near you</p>
               <div className="space-y-3">
@@ -371,6 +469,19 @@ export default function Login() {
             Create Account
           </button>
         </form>
+
+        {/* Quick Register for Testing */}
+        <div className="bg-blue-50 rounded-2xl border border-blue-200 p-4">
+          <p className="text-xs font-bold text-blue-800 mb-2">Quick Test Account</p>
+          <p className="text-[10px] text-blue-600 mb-3">Create a test account instantly without filling out the form (local only)</p>
+          <button
+            onClick={handleQuickRegister}
+            className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors"
+          >
+            Create Test Account & Start
+          </button>
+        </div>
+        </div>
       )}
     </div>
   );
