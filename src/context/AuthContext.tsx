@@ -117,6 +117,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data) {
         const user = profileToUser(data);
+        // Overlay profile picture from auth user_metadata (not stored in DB)
+        const { data: authData } = await supabase.auth.getUser();
+        const pic = authData?.user?.user_metadata?.profile_picture;
+        if (pic) user.profilePicture = pic as string;
         setCurrentUser(user);
         setAllUsers(prev => {
           const exists = prev.some(u => u.id === user.id);
@@ -327,26 +331,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const updated = { ...currentUser, profilePicture: dataUrl };
     setCurrentUser(updated);
     setAllUsers(prev => prev.map(u => u.id === currentUser.id ? updated : u));
-    // Sync to Supabase if authenticated
+    // Save to Supabase auth user_metadata (works without a DB column)
     if (session) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({ profile_picture: dataUrl })
-        .eq('id', currentUser.id)
-        .select('id, profile_picture')
-        .single();
+      const { error } = await supabase.auth.updateUser({
+        data: { profile_picture: dataUrl },
+      });
       if (error) {
         console.error('[GolfBuddy] Failed to save profile picture:', error.message);
-      } else if (!data) {
-        console.error('[GolfBuddy] Profile picture update returned no data — RLS may be blocking the write');
-      } else {
-        const saved = (data.profile_picture as string) || '';
-        if (saved.length < 100) {
-          console.error('[GolfBuddy] Profile picture was not persisted. Saved length:', saved.length);
-        }
       }
-    } else {
-      console.warn('[GolfBuddy] No session — profile picture saved locally only');
     }
   };
 
