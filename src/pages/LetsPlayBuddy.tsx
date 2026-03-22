@@ -320,46 +320,144 @@ export default function LetsPlayBuddy() {
         <div className="space-y-5">
           {/* Dates */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <Calendar size={14} className="inline mr-1 -mt-0.5" /> Available Dates
+            <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
+              <Calendar size={14} className="-mt-0.5" /> Available Dates
+              <span className="text-xs font-normal text-gray-400 ml-1">({selDates.length}/5 selected)</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.getElementById('buddy-date-picker') as HTMLInputElement;
+                  input?.showPicker?.();
+                  input?.click();
+                }}
+                className={`ml-auto p-1.5 rounded-lg border transition-colors ${selDates.length >= 5 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-golf-300 text-golf-700 hover:bg-golf-50'}`}
+                title="Pick a date from calendar"
+                disabled={selDates.length >= 5}
+              >
+                <Plus size={14} />
+              </button>
+              <input
+                id="buddy-date-picker"
+                type="date"
+                className="sr-only"
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => {
+                  const date = e.target.value;
+                  if (date && !selDates.includes(date) && selDates.length < 5) {
+                    setSelDates(prev => [...prev, date].sort());
+                  }
+                  e.target.value = '';
+                }}
+              />
             </label>
             <div className="flex flex-wrap gap-2">
-              {upcomingDates.map(date => (
+              {upcomingDates.map(date => {
+                const isSelected = selDates.includes(date);
+                const atLimit = selDates.length >= 5 && !isSelected;
+                return (
+                  <button
+                    key={date}
+                    onClick={() => setSelDates(prev => prev.includes(date) ? prev.filter(d => d !== date) : prev.length < 5 ? [...prev, date] : prev)}
+                    disabled={atLimit}
+                    className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
+                      isSelected
+                        ? 'border-golf-600 bg-golf-50 text-golf-700'
+                        : atLimit
+                          ? 'border-gray-100 text-gray-300 cursor-not-allowed'
+                          : 'border-gray-200 text-gray-600'
+                    }`}
+                  >
+                    {formatDate(date)}
+                  </button>
+                );
+              })}
+              {/* Show custom-picked dates not in upcoming list */}
+              {selDates.filter(d => !upcomingDates.includes(d)).map(date => (
                 <button
                   key={date}
-                  onClick={() => setSelDates(prev => prev.includes(date) ? prev.filter(d => d !== date) : [...prev, date])}
-                  className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
-                    selDates.includes(date)
-                      ? 'border-golf-600 bg-golf-50 text-golf-700'
-                      : 'border-gray-200 text-gray-600'
-                  }`}
+                  onClick={() => setSelDates(prev => prev.filter(d => d !== date))}
+                  className="px-3 py-2 rounded-xl border border-golf-600 bg-golf-50 text-golf-700 text-xs font-medium transition-all flex items-center gap-1"
                 >
-                  {formatDate(date)}
+                  {formatDate(date)} <X size={10} />
                 </button>
               ))}
             </div>
+            {selDates.length >= 5 && (
+              <p className="text-[10px] text-amber-600 mt-1">Maximum 5 dates selected. Remove one to add another.</p>
+            )}
           </div>
 
           {/* Times */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <Clock size={14} className="inline mr-1 -mt-0.5" /> Available Times
+            <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
+              <Clock size={14} className="-mt-0.5" /> Available Times
+              <span className="text-xs font-normal text-gray-400 ml-1">({selTimes.length}/3 selected)</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.getElementById('buddy-time-picker') as HTMLInputElement;
+                  input?.showPicker?.();
+                  input?.click();
+                }}
+                className={`ml-auto p-1.5 rounded-lg border transition-colors ${selTimes.length >= 3 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-golf-300 text-golf-700 hover:bg-golf-50'}`}
+                title="Pick a custom time"
+                disabled={selTimes.length >= 3}
+              >
+                <Plus size={14} />
+              </button>
+              <input
+                id="buddy-time-picker"
+                type="time"
+                className="sr-only"
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (!raw) return;
+                  const [h, m] = raw.split(':').map(Number);
+                  const ampm = h >= 12 ? 'PM' : 'AM';
+                  const h12 = h % 12 || 12;
+                  const formatted = `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+                  if (!selTimes.includes(formatted) && selTimes.length < 3) {
+                    setSelTimes(prev => [...prev, formatted]);
+                  }
+                  e.target.value = '';
+                }}
+              />
             </label>
             <div className="flex flex-wrap gap-2">
-              {timeSlots.map(time => (
+              {timeSlots.map(time => {
+                const isSelected = selTimes.includes(time);
+                const atLimit = selTimes.length >= 3 && !isSelected;
+                return (
+                  <button
+                    key={time}
+                    onClick={() => setSelTimes(prev => prev.includes(time) ? prev.filter(t => t !== time) : prev.length < 3 ? [...prev, time] : prev)}
+                    disabled={atLimit}
+                    className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
+                      isSelected
+                        ? 'border-golf-600 bg-golf-50 text-golf-700'
+                        : atLimit
+                          ? 'border-gray-100 text-gray-300 cursor-not-allowed'
+                          : 'border-gray-200 text-gray-600'
+                    }`}
+                  >
+                    {time}
+                  </button>
+                );
+              })}
+              {/* Show custom-picked times not in preset list */}
+              {selTimes.filter(t => !timeSlots.includes(t)).map(time => (
                 <button
                   key={time}
-                  onClick={() => setSelTimes(prev => prev.includes(time) ? prev.filter(t => t !== time) : [...prev, time])}
-                  className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
-                    selTimes.includes(time)
-                      ? 'border-golf-600 bg-golf-50 text-golf-700'
-                      : 'border-gray-200 text-gray-600'
-                  }`}
+                  onClick={() => setSelTimes(prev => prev.filter(t => t !== time))}
+                  className="px-3 py-2 rounded-xl border border-golf-600 bg-golf-50 text-golf-700 text-xs font-medium transition-all flex items-center gap-1"
                 >
-                  {time}
+                  {time} <X size={10} />
                 </button>
               ))}
             </div>
+            {selTimes.length >= 3 && (
+              <p className="text-[10px] text-amber-600 mt-1">Maximum 3 times selected. Remove one to add another.</p>
+            )}
           </div>
 
           {/* Preferred Course */}
