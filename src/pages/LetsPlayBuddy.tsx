@@ -49,7 +49,6 @@ export default function LetsPlayBuddy() {
   const [selDates, setSelDates] = useState<string[]>([]);
   const [selTimes, setSelTimes] = useState<string[]>([]);
   const [prefCourse, setPrefCourse] = useState('');
-  const [altCourses, setAltCourses] = useState<string[]>([]);
   const [courseSearchQuery, setCourseSearchQuery] = useState('');
   const [courseSearchActive, setCourseSearchActive] = useState('');
 
@@ -192,7 +191,7 @@ export default function LetsPlayBuddy() {
       availableDates: selDates,
       availableTimes: selTimes,
       preferredCourseId: prefCourse,
-      alternateCourseIds: altCourses,
+      alternateCourseIds: [],
     });
     setShowSetAvailability(false);
   };
@@ -414,92 +413,6 @@ export default function LetsPlayBuddy() {
                           <h4 className="font-bold text-gray-900 text-sm capitalize">{courseSearchActive}</h4>
                           <p className="text-xs text-gray-500 mt-0.5">
                             {isSelected ? 'Selected as preferred course' : 'Tap to select as preferred course'}
-                          </p>
-                        </div>
-                        {isSelected && <Check size={16} className="text-golf-600 shrink-0" />}
-                      </div>
-                      <a
-                        href={courseGoogleUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="flex items-center justify-center gap-1.5 w-full mt-2 py-2 bg-gray-100 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-200 transition-colors"
-                      >
-                        <ExternalLink size={12} />
-                        View on Google
-                      </a>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-
-          {/* Alternate Courses */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <MapPin size={14} className="inline mr-1 -mt-0.5" /> Alternate Courses (up to 3)
-            </label>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {filteredCourseList.filter(c => c.id !== prefCourse).map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => {
-                    setAltCourses(prev =>
-                      prev.includes(c.id)
-                        ? prev.filter(id => id !== c.id)
-                        : prev.length < 3 ? [...prev, c.id] : prev
-                    );
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all ${
-                    altCourses.includes(c.id)
-                      ? 'border-golf-600 bg-golf-50'
-                      : 'border-gray-200'
-                  }`}
-                >
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{c.name}</p>
-                    <p className="text-xs text-gray-500">{c.city}, {c.state} · {c.distance} mi</p>
-                  </div>
-                  {altCourses.includes(c.id) && <Check size={16} className="text-golf-600" />}
-                </button>
-              ))}
-              {/* Google fallback for alternate courses — selectable */}
-              {courseSearchIsName && (() => {
-                const customId = `custom:${courseSearchActive.trim()}`;
-                const isSelected = altCourses.includes(customId);
-                // Don't show if already selected as preferred
-                if (prefCourse === customId) return null;
-                return (
-                  <div
-                    onClick={() => {
-                      setAltCourses(prev =>
-                        prev.includes(customId)
-                          ? prev.filter(id => id !== customId)
-                          : prev.length < 3 ? [...prev, customId] : prev
-                      );
-                    }}
-                    className={`bg-white rounded-2xl shadow-sm border overflow-hidden cursor-pointer transition-all ${
-                      isSelected ? 'border-golf-600 ring-2 ring-golf-200' : 'border-gray-100'
-                    }`}
-                  >
-                    <div className="h-20 bg-gradient-to-br from-golf-600 to-emerald-500 relative flex items-center justify-center">
-                      <Search size={28} className="text-white/30" />
-                      <div className="absolute top-2 left-2 bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        Web Result
-                      </div>
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 bg-white text-golf-700 rounded-full p-0.5">
-                          <Check size={12} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-sm capitalize">{courseSearchActive}</h4>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {isSelected ? 'Selected as alternate course' : 'Tap to select as alternate course'}
                           </p>
                         </div>
                         {isSelected && <Check size={16} className="text-golf-600 shrink-0" />}
