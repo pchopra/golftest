@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Avatar from '../components/Avatar';
 import { mockCourses } from '../data/mockCourses';
 import { hotDeals } from '../data/hotDeals';
 import { getDistanceMiles } from '../utils/distance';
@@ -494,9 +495,7 @@ export default function LetsPlayBuddy() {
                       : 'border-gray-200'
                   }`}
                 >
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-golf-400 to-golf-700 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                    {user.firstName[0]}{user.lastName[0]}
-                  </div>
+                  <Avatar firstName={user.firstName} lastName={user.lastName} profilePicture={user.profilePicture} size="md" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</p>
                     <p className="text-xs text-gray-500">{user.skillLevel}</p>
@@ -610,9 +609,7 @@ export default function LetsPlayBuddy() {
                 return (
                   <div key={memberId} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-gray-50">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-golf-400 to-golf-700 flex items-center justify-center text-white text-[10px] font-bold">
-                        {member.firstName[0]}{member.lastName[0]}
-                      </div>
+                      <Avatar firstName={member.firstName} lastName={member.lastName} profilePicture={member.profilePicture} size="sm" />
                       <div>
                         <p className="text-xs font-semibold text-gray-900">{member.firstName} {member.lastName}{isMe ? ' (You)' : ''}</p>
                         {isAdmin && (
@@ -664,9 +661,7 @@ export default function LetsPlayBuddy() {
                         onClick={() => { addGroupMember(group.id, user.id); setShowAddMember(false); }}
                         className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-golf-50 transition-colors"
                       >
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-golf-400 to-golf-700 flex items-center justify-center text-white text-[9px] font-bold">
-                          {user.firstName[0]}{user.lastName[0]}
-                        </div>
+                        <Avatar firstName={user.firstName} lastName={user.lastName} profilePicture={user.profilePicture} size="xs" />
                         <span className="text-xs font-medium text-gray-700">{user.firstName} {user.lastName}</span>
                       </button>
                     ))}
@@ -1051,9 +1046,7 @@ function AvailabilityResults({
         {buddies.map(({ user, avail, distance }) => (
           <div key={user.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-golf-400 to-golf-700 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                {user.firstName[0]}{user.lastName[0]}
-              </div>
+              <Avatar firstName={user.firstName} lastName={user.lastName} profilePicture={user.profilePicture} size="lg" />
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-bold text-gray-900">{user.firstName} {user.lastName}</h4>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -1251,9 +1244,7 @@ function WeekendPollPanel({
                       const voter = getUserById(vote.userId);
                       return (
                         <div key={vote.userId} className="flex items-center gap-2 bg-white rounded-lg px-2 py-1.5">
-                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-golf-400 to-golf-700 flex items-center justify-center text-white text-[9px] font-bold shrink-0">
-                            {voter?.firstName[0]}{voter?.lastName[0]}
-                          </div>
+                          <Avatar firstName={voter?.firstName || '?'} lastName={voter?.lastName || '?'} profilePicture={voter?.profilePicture} size="xs" />
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium text-gray-800">{voter?.firstName}</p>
                             <p className="text-[10px] text-gray-500 truncate">
@@ -1376,9 +1367,7 @@ function GroupAvailabilityViewer({
               <div className="space-y-2">
                 {availableMembers.map(({ user, avail }) => (
                   <div key={user!.id} className="flex items-center gap-2.5 bg-green-50 border border-green-200 rounded-xl px-3 py-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-golf-400 to-golf-700 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                      {user!.firstName[0]}{user!.lastName[0]}
-                    </div>
+                    <Avatar firstName={user!.firstName} lastName={user!.lastName} profilePicture={user!.profilePicture} size="sm" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-gray-900">{user!.firstName} {user!.lastName}</p>
                       <p className="text-[10px] text-gray-500">{user!.skillLevel}</p>
@@ -1400,9 +1389,7 @@ function GroupAvailabilityViewer({
               <div className="space-y-1.5">
                 {unavailableMembers.map(({ user }) => (
                   <div key={user!.id} className="flex items-center gap-2.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 opacity-60">
-                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                      {user!.firstName[0]}{user!.lastName[0]}
-                    </div>
+                    <Avatar firstName={user!.firstName} lastName={user!.lastName} profilePicture={user!.profilePicture} size="sm" />
                     <p className="text-xs text-gray-500">{user!.firstName} {user!.lastName}</p>
                   </div>
                 ))}

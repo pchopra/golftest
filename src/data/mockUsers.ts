@@ -12,6 +12,7 @@ export interface User {
   address: string;
   lat: number;
   lng: number;
+  profilePicture?: string;
   createdAt: string;
 }
 

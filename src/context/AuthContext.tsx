@@ -30,6 +30,7 @@ interface AuthContextType {
   sendMessage: (groupId: string, text: string) => void;
   createWeekendPoll: (groupId: string) => WeekendPoll;
   voteOnPoll: (pollId: string, vote: Omit<PollVote, 'userId'>) => void;
+  updateProfilePicture: (dataUrl: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -55,6 +56,7 @@ function profileToUser(p: Record<string, unknown>): User {
     address: (p.address as string) || '',
     lat: (p.lat as number) || 37.7749,
     lng: (p.lng as number) || -122.4194,
+    profilePicture: (p.profile_picture as string) || undefined,
     createdAt: p.created_at ? new Date(p.created_at as string).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
   };
 }
@@ -122,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       address: meta.address || '',
       lat: meta.lat ?? 37.7749,
       lng: meta.lng ?? -122.4194,
+      profile_picture: meta.profile_picture || '',
     };
 
     const { data: inserted, error: insertErr } = await supabase
@@ -144,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         address: meta.address || '',
         lat: meta.lat ?? 37.7749,
         lng: meta.lng ?? -122.4194,
+        profilePicture: meta.profile_picture || undefined,
         createdAt: new Date().toISOString().split('T')[0],
       };
       setCurrentUser(fallbackUser);
@@ -290,6 +294,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
     }
     setCurrentUser(null);
+  };
+
+  const updateProfilePicture = (dataUrl: string) => {
+    if (!currentUser) return;
+    const updated = { ...currentUser, profilePicture: dataUrl };
+    setCurrentUser(updated);
+    setAllUsers(prev => prev.map(u => u.id === currentUser.id ? updated : u));
+    // Sync to Supabase if authenticated
+    if (session) {
+      supabase.from('profiles').update({ profile_picture: dataUrl }).eq('id', currentUser.id);
+    }
   };
 
   const setMyAvailability = (avail: Omit<BuddyAvailability, 'userId'>) => {
@@ -489,7 +504,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register, logout,
       setMyAvailability, getMyAvailability, toggleFreeNow,
       createChatGroup, deleteGroup, addGroupMember, removeGroupMember, makeGroupAdmin, leaveGroup, sendMessage,
-      createWeekendPoll, voteOnPoll,
+      createWeekendPoll, voteOnPoll, updateProfilePicture,
     }}>
       {children}
     </AuthContext.Provider>

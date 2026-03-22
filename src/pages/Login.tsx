@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, UserPlus, Loader2 } from 'lucide-react';
 import { getCoordinatesForZip } from '../data/zipCoordinates';
 import type { SkillLevel, Gender } from '../data/mockUsers';
+import Avatar from '../components/Avatar';
 
 type Tab = 'login' | 'register';
 
@@ -11,7 +12,9 @@ export default function Login() {
   const {
     login, register, loginWithSupabase, registerWithSupabase,
     currentUser, allUsers, session, loading: authLoading, logout,
+    updateProfilePicture,
   } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('login');
   const [error, setError] = useState('');
@@ -151,10 +154,37 @@ export default function Login() {
     return (
       <div className="px-4 pt-6 pb-28">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (file.size > 2 * 1024 * 1024) {
+                alert('Image must be under 2 MB');
+                return;
+              }
+              const reader = new FileReader();
+              reader.onload = () => {
+                if (typeof reader.result === 'string') {
+                  updateProfilePicture(reader.result);
+                }
+              };
+              reader.readAsDataURL(file);
+              e.target.value = '';
+            }}
+          />
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-golf-600 to-golf-800 flex items-center justify-center text-white text-xl font-bold">
-              {currentUser.firstName[0]}{currentUser.lastName[0]}
-            </div>
+            <Avatar
+              firstName={currentUser.firstName}
+              lastName={currentUser.lastName}
+              profilePicture={currentUser.profilePicture}
+              size="xl"
+              editable
+              onEdit={() => fileInputRef.current?.click()}
+            />
             <div>
               <h2 className="text-xl font-bold text-gray-900">
                 {currentUser.firstName} {currentUser.lastName}
