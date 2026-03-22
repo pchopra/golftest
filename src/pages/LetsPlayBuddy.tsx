@@ -427,11 +427,13 @@ export default function LetsPlayBuddy() {
               <p className="text-xs text-gray-500">
                 {group.memberIds.map(id => getUserById(id)?.firstName).filter(Boolean).join(', ')}
               </p>
-              {group.teeDate && (
+              {(group.teeDate || group.teeTime) && (
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-golf-700 bg-golf-50 border border-golf-200 rounded px-1.5 py-0.5">
-                    <Calendar size={10} /> {formatDate(group.teeDate)}
-                  </span>
+                  {group.teeDate && (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-golf-700 bg-golf-50 border border-golf-200 rounded px-1.5 py-0.5">
+                      <Calendar size={10} /> {formatDate(group.teeDate)}
+                    </span>
+                  )}
                   {group.teeTime && (
                     <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-golf-700 bg-golf-50 border border-golf-200 rounded px-1.5 py-0.5">
                       <Clock size={10} /> {group.teeTime}
@@ -696,9 +698,11 @@ export default function LetsPlayBuddy() {
                       <p className="text-xs text-green-100 mb-1.5">
                         {group.memberIds.map(id => getUserById(id)?.firstName).filter(Boolean).join(', ')}
                       </p>
-                      {group.teeDate && (
+                      {(group.teeDate || group.teeTime) && (
                         <p className="text-[10px] text-green-200 mb-1 flex items-center gap-1">
-                          <Calendar size={10} /> {formatDate(group.teeDate)}{group.teeTime && ` @ ${group.teeTime}`}
+                          {group.teeDate && <><Calendar size={10} /> {formatDate(group.teeDate)}</>}
+                          {group.teeDate && group.teeTime && ' @ '}
+                          {group.teeTime && <><Clock size={10} /> {group.teeTime}</>}
                         </p>
                       )}
                       {lastMsg && (
