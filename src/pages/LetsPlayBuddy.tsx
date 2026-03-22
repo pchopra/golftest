@@ -139,7 +139,8 @@ export default function LetsPlayBuddy() {
   };
 
   const getUserById = (id: string) => allUsers.find(u => u.id === id);
-  const getCourseName = (id: string) => mockCourses.find(c => c.id === id)?.name || 'Unknown';
+  const getCourseName = (id: string) =>
+    id.startsWith('custom:') ? id.slice(7) : (mockCourses.find(c => c.id === id)?.name || 'Unknown');
 
   // Compute available buddies with their availability and distance
   const buddiesWithAvail = otherUsers.map(user => {
@@ -385,50 +386,52 @@ export default function LetsPlayBuddy() {
                   {prefCourse === c.id && <Check size={16} className="text-golf-600" />}
                 </button>
               ))}
-              {/* Google fallback banner — when name search has no results */}
-              {courseSearchIsName && filteredCourseList.length === 0 && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="h-20 bg-gradient-to-br from-golf-600 to-emerald-500 relative flex items-center justify-center">
-                    <Search size={28} className="text-white/30" />
-                    <div className="absolute top-2 left-2 bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      Web Result
+              {/* Google fallback banner — selectable as preferred course */}
+              {courseSearchIsName && (() => {
+                const customId = `custom:${courseSearchActive.trim()}`;
+                const isSelected = prefCourse === customId;
+                return (
+                  <div
+                    onClick={() => setPrefCourse(customId)}
+                    className={`bg-white rounded-2xl shadow-sm border overflow-hidden cursor-pointer transition-all ${
+                      isSelected ? 'border-golf-600 ring-2 ring-golf-200' : 'border-gray-100'
+                    }`}
+                  >
+                    <div className="h-20 bg-gradient-to-br from-golf-600 to-emerald-500 relative flex items-center justify-center">
+                      <Search size={28} className="text-white/30" />
+                      <div className="absolute top-2 left-2 bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        Web Result
+                      </div>
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 bg-white text-golf-700 rounded-full p-0.5">
+                          <Check size={12} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-bold text-gray-900 text-sm capitalize">{courseSearchActive}</h4>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {isSelected ? 'Selected as preferred course' : 'Tap to select as preferred course'}
+                          </p>
+                        </div>
+                        {isSelected && <Check size={16} className="text-golf-600 shrink-0" />}
+                      </div>
+                      <a
+                        href={courseGoogleUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center justify-center gap-1.5 w-full mt-2 py-2 bg-gray-100 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                      >
+                        <ExternalLink size={12} />
+                        View on Google
+                      </a>
                     </div>
                   </div>
-                  <div className="p-3">
-                    <h4 className="font-bold text-gray-900 text-sm capitalize">{courseSearchActive}</h4>
-                    <p className="text-xs text-gray-500 mt-0.5">Not in our database — view on Google</p>
-                    <a
-                      href={courseGoogleUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-1.5 w-full mt-2 py-2 bg-golf-700 text-white text-xs font-semibold rounded-xl hover:bg-golf-800 transition-colors"
-                    >
-                      <ExternalLink size={12} />
-                      Search on Google
-                    </a>
-                  </div>
-                </div>
-              )}
-              {/* Compact Google link when results exist */}
-              {courseSearchIsName && filteredCourseList.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                  <div className="p-2.5 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-golf-600 to-emerald-500 flex items-center justify-center shrink-0">
-                      <Search size={14} className="text-white/70" />
-                    </div>
-                    <p className="text-xs text-gray-600 flex-1">Find more on Google</p>
-                    <a
-                      href={courseGoogleUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-golf-700 text-white text-[10px] font-semibold rounded-lg hover:bg-golf-800 transition-colors"
-                    >
-                      <ExternalLink size={10} />
-                      Google
-                    </a>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
 
@@ -461,49 +464,60 @@ export default function LetsPlayBuddy() {
                   {altCourses.includes(c.id) && <Check size={16} className="text-golf-600" />}
                 </button>
               ))}
-              {/* Google fallback for alternate courses too */}
-              {courseSearchIsName && filteredCourseList.filter(c => c.id !== prefCourse).length === 0 && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="h-20 bg-gradient-to-br from-golf-600 to-emerald-500 relative flex items-center justify-center">
-                    <Search size={28} className="text-white/30" />
-                    <div className="absolute top-2 left-2 bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      Web Result
+              {/* Google fallback for alternate courses — selectable */}
+              {courseSearchIsName && (() => {
+                const customId = `custom:${courseSearchActive.trim()}`;
+                const isSelected = altCourses.includes(customId);
+                // Don't show if already selected as preferred
+                if (prefCourse === customId) return null;
+                return (
+                  <div
+                    onClick={() => {
+                      setAltCourses(prev =>
+                        prev.includes(customId)
+                          ? prev.filter(id => id !== customId)
+                          : prev.length < 3 ? [...prev, customId] : prev
+                      );
+                    }}
+                    className={`bg-white rounded-2xl shadow-sm border overflow-hidden cursor-pointer transition-all ${
+                      isSelected ? 'border-golf-600 ring-2 ring-golf-200' : 'border-gray-100'
+                    }`}
+                  >
+                    <div className="h-20 bg-gradient-to-br from-golf-600 to-emerald-500 relative flex items-center justify-center">
+                      <Search size={28} className="text-white/30" />
+                      <div className="absolute top-2 left-2 bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        Web Result
+                      </div>
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 bg-white text-golf-700 rounded-full p-0.5">
+                          <Check size={12} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-bold text-gray-900 text-sm capitalize">{courseSearchActive}</h4>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {isSelected ? 'Selected as alternate course' : 'Tap to select as alternate course'}
+                          </p>
+                        </div>
+                        {isSelected && <Check size={16} className="text-golf-600 shrink-0" />}
+                      </div>
+                      <a
+                        href={courseGoogleUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center justify-center gap-1.5 w-full mt-2 py-2 bg-gray-100 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                      >
+                        <ExternalLink size={12} />
+                        View on Google
+                      </a>
                     </div>
                   </div>
-                  <div className="p-3">
-                    <h4 className="font-bold text-gray-900 text-sm capitalize">{courseSearchActive}</h4>
-                    <p className="text-xs text-gray-500 mt-0.5">Not in our database — view on Google</p>
-                    <a
-                      href={courseGoogleUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-1.5 w-full mt-2 py-2 bg-golf-700 text-white text-xs font-semibold rounded-xl hover:bg-golf-800 transition-colors"
-                    >
-                      <ExternalLink size={12} />
-                      Search on Google
-                    </a>
-                  </div>
-                </div>
-              )}
-              {courseSearchIsName && filteredCourseList.filter(c => c.id !== prefCourse).length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                  <div className="p-2.5 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-golf-600 to-emerald-500 flex items-center justify-center shrink-0">
-                      <Search size={14} className="text-white/70" />
-                    </div>
-                    <p className="text-xs text-gray-600 flex-1">Find more on Google</p>
-                    <a
-                      href={courseGoogleUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-golf-700 text-white text-[10px] font-semibold rounded-lg hover:bg-golf-800 transition-colors"
-                    >
-                      <ExternalLink size={10} />
-                      Google
-                    </a>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
 
