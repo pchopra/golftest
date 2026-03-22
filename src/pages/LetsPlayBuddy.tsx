@@ -40,6 +40,20 @@ export default function LetsPlayBuddy() {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartX = useRef(0);
 
+  // Buddy search & favorites
+  const [buddySearch, setBuddySearch] = useState('');
+  const [favoriteBuddyIds, setFavoriteBuddyIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('favoriteBuddyIds') || '[]'); } catch { return []; }
+  });
+
+  const toggleFavorite = (userId: string) => {
+    setFavoriteBuddyIds(prev => {
+      const next = prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId];
+      localStorage.setItem('favoriteBuddyIds', JSON.stringify(next));
+      return next;
+    });
+  };
+
   // Poll voting state
   const [pollSelDates, setPollSelDates] = useState<string[]>([]);
   const [pollSelTimes, setPollSelTimes] = useState<string[]>([]);
@@ -253,7 +267,23 @@ export default function LetsPlayBuddy() {
     }
   };
 
-  const filteredBuddies = getFilteredBuddies(availFilter);
+  const filteredBuddies = (() => {
+    let list = getFilteredBuddies(availFilter);
+    // Search filter
+    if (buddySearch.trim()) {
+      const q = buddySearch.trim().toLowerCase();
+      list = list.filter(({ user }) =>
+        `${user.firstName} ${user.lastName}`.toLowerCase().includes(q)
+      );
+    }
+    // Sort favorites to top, preserving distance order within each group
+    list.sort((a, b) => {
+      const aFav = favoriteBuddyIds.includes(a.user.id) ? 0 : 1;
+      const bFav = favoriteBuddyIds.includes(b.user.id) ? 0 : 1;
+      return aFav - bFav;
+    });
+    return list;
+  })();
   const commonDates = getCommonDates(filteredBuddies);
   const commonTimes = getCommonTimes(filteredBuddies);
 
@@ -883,6 +913,23 @@ export default function LetsPlayBuddy() {
           {/* Availability Filter Tabs */}
           <AvailabilityFilterTabs filter={availFilter} setFilter={setAvailFilter} />
 
+          {/* Buddy Search */}
+          <div className="relative mb-3">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={buddySearch}
+              onChange={e => setBuddySearch(e.target.value)}
+              placeholder="Search buddies by name..."
+              className="w-full pl-9 pr-8 py-2.5 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-golf-400 focus:ring-1 focus:ring-golf-200 outline-none transition-all"
+            />
+            {buddySearch && (
+              <button onClick={() => setBuddySearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
           {/* Results */}
           {filteredBuddies.length > 0 ? (
             <AvailabilityResults
@@ -892,6 +939,8 @@ export default function LetsPlayBuddy() {
               nearbyDeals={nearbyDeals}
               formatDate={formatDate}
               getCourseName={getCourseName}
+              favoriteBuddyIds={favoriteBuddyIds}
+              onToggleFavorite={toggleFavorite}
             />
           ) : (
             <div className="text-center py-8">
@@ -1030,6 +1079,8 @@ function AvailabilityResults({
   nearbyDeals,
   formatDate,
   getCourseName,
+  favoriteBuddyIds = [],
+  onToggleFavorite,
 }: {
   buddies: { user: User; avail: BuddyAvailability | undefined; distance: number }[];
   commonDates: string[];
@@ -1037,6 +1088,8 @@ function AvailabilityResults({
   nearbyDeals: (typeof hotDeals[number] & { distance: number })[];
   formatDate: (iso: string) => string;
   getCourseName: (id: string) => string;
+  favoriteBuddyIds?: string[];
+  onToggleFavorite?: (userId: string) => void;
 }) {
   return (
     <div className="space-y-4 animate-fade-in">
@@ -1053,8 +1106,10 @@ function AvailabilityResults({
 
       {/* Buddy list */}
       <div className="space-y-3">
-        {buddies.map(({ user, avail, distance }) => (
-          <div key={user.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+        {buddies.map(({ user, avail, distance }) => {
+          const isFav = favoriteBuddyIds.includes(user.id);
+          return (
+          <div key={user.id} className={`bg-white rounded-xl border shadow-sm p-4 ${isFav ? 'border-amber-300 ring-1 ring-amber-100' : 'border-gray-200'}`}>
             <div className="flex items-center gap-3 mb-2">
               <Avatar firstName={user.firstName} lastName={user.lastName} profilePicture={user.profilePicture} size="lg" />
               <div className="flex-1 min-w-0">
@@ -1066,6 +1121,15 @@ function AvailabilityResults({
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
+                {onToggleFavorite && (
+                  <button
+                    onClick={() => onToggleFavorite(user.id)}
+                    className={`p-2 rounded-full transition-colors ${isFav ? 'text-amber-500 bg-amber-50 hover:bg-amber-100' : 'text-gray-300 hover:text-amber-400 hover:bg-amber-50'}`}
+                    title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+                  >
+                    <Star size={16} fill={isFav ? 'currentColor' : 'none'} />
+                  </button>
+                )}
                 {user.phone && (
                   <a href={`sms:${user.phone}`} className="p-2 rounded-full bg-golf-50 text-golf-700 hover:bg-golf-100 transition-colors" title={`Text ${user.firstName}`}>
                     <MessageCircle size={16} />
@@ -1098,7 +1162,8 @@ function AvailabilityResults({
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Top 3 Hot Deal Courses */}
