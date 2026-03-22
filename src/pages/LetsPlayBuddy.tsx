@@ -330,9 +330,8 @@ export default function LetsPlayBuddy() {
                   input?.showPicker?.();
                   input?.click();
                 }}
-                className={`ml-auto p-1.5 rounded-lg border transition-colors ${selDates.length >= 5 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-golf-300 text-golf-700 hover:bg-golf-50'}`}
+                className="ml-auto p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors"
                 title="Pick a date from calendar"
-                disabled={selDates.length >= 5}
               >
                 <Plus size={14} />
               </button>
@@ -343,8 +342,11 @@ export default function LetsPlayBuddy() {
                 min={new Date().toISOString().split('T')[0]}
                 onChange={(e) => {
                   const date = e.target.value;
-                  if (date && !selDates.includes(date) && selDates.length < 5) {
-                    setSelDates(prev => [...prev, date].sort());
+                  if (date && !selDates.includes(date)) {
+                    setSelDates(prev => {
+                      const next = prev.length >= 5 ? [...prev.slice(1), date] : [...prev, date];
+                      return next.sort();
+                    });
                   }
                   e.target.value = '';
                 }}
@@ -399,9 +401,8 @@ export default function LetsPlayBuddy() {
                   input?.showPicker?.();
                   input?.click();
                 }}
-                className={`ml-auto p-1.5 rounded-lg border transition-colors ${selTimes.length >= 3 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-golf-300 text-golf-700 hover:bg-golf-50'}`}
+                className="ml-auto p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors"
                 title="Pick a custom time"
-                disabled={selTimes.length >= 3}
               >
                 <Plus size={14} />
               </button>
@@ -416,8 +417,8 @@ export default function LetsPlayBuddy() {
                   const ampm = h >= 12 ? 'PM' : 'AM';
                   const h12 = h % 12 || 12;
                   const formatted = `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
-                  if (!selTimes.includes(formatted) && selTimes.length < 3) {
-                    setSelTimes(prev => [...prev, formatted]);
+                  if (!selTimes.includes(formatted)) {
+                    setSelTimes(prev => prev.length >= 3 ? [...prev.slice(1), formatted] : [...prev, formatted]);
                   }
                   e.target.value = '';
                 }}
