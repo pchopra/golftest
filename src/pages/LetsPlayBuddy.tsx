@@ -337,10 +337,10 @@ export default function LetsPlayBuddy() {
               <input
                 id="buddy-date-picker"
                 type="date"
-                className="sr-only"
+                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
                 tabIndex={-1}
                 min={new Date().toISOString().split('T')[0]}
-                onBlur={(e) => {
+                onChange={(e) => {
                   const date = e.target.value;
                   if (date && !selDates.includes(date)) {
                     setSelDates(prev => {
@@ -408,9 +408,9 @@ export default function LetsPlayBuddy() {
               <input
                 id="buddy-time-picker"
                 type="time"
-                className="sr-only"
+                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
                 tabIndex={-1}
-                onBlur={(e) => {
+                onChange={(e) => {
                   const raw = e.target.value;
                   if (!raw) return;
                   const [h, m] = raw.split(':').map(Number);
@@ -1373,10 +1373,10 @@ function WeekendPollPanel({
             <input
               id="new-poll-date-picker"
               type="date"
-              className="sr-only"
+              style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
               tabIndex={-1}
               min={new Date().toISOString().split('T')[0]}
-              onBlur={(e) => {
+              onChange={(e) => {
                 const date = e.target.value;
                 if (date && !newPollDates.includes(date)) {
                   setNewPollDates(prev => [...prev, date].sort());
@@ -1415,9 +1415,9 @@ function WeekendPollPanel({
             <input
               id="new-poll-time-picker"
               type="time"
-              className="sr-only"
+              style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
               tabIndex={-1}
-              onBlur={(e) => {
+              onChange={(e) => {
                 const raw = e.target.value;
                 if (!raw) return;
                 const formatted = formatTimeRaw(raw);
