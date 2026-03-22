@@ -1,15 +1,17 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { mockCourses } from '../data/mockCourses';
 import { hotDeals } from '../data/hotDeals';
 import { getDistanceMiles } from '../utils/distance';
+import { getCoordinatesForZip } from '../data/zipCoordinates';
 import type { BuddyAvailability, User, ChatGroup, WeekendPoll } from '../data/mockUsers';
 import {
   Calendar, Clock, MapPin, Users, MessageCircle, Send,
   ChevronRight, Plus, Check, Star, DollarSign, ArrowLeft,
   UserCheck, Users2, Filter, Flame, BarChart3, Car, Eye, Phone,
   Settings, Trash2, LogOut, Shield, UserPlus, UserMinus, X,
+  Search, ExternalLink,
 } from 'lucide-react';
 
 type MainTab = 'buddies' | 'chat';
@@ -48,6 +50,8 @@ export default function LetsPlayBuddy() {
   const [selTimes, setSelTimes] = useState<string[]>([]);
   const [prefCourse, setPrefCourse] = useState('');
   const [altCourses, setAltCourses] = useState<string[]>([]);
+  const [courseSearchQuery, setCourseSearchQuery] = useState('');
+  const [courseSearchActive, setCourseSearchActive] = useState('');
 
   // Create group state
   const [groupName, setGroupName] = useState('');
@@ -87,10 +91,46 @@ export default function LetsPlayBuddy() {
   }
 
   const timeSlots = ['7:00 AM', '9:30 AM', '11:00 AM', '2:00 PM', '3:00 PM'];
-  const nearbyCourses = mockCourses
-    .map(c => ({ ...c, distance: getDistanceMiles(currentUser.lat, currentUser.lng, c.lat, c.lng) }))
-    .sort((a, b) => a.distance - b.distance)
-    .slice(0, 10);
+  const allCoursesWithDistance = useMemo(() =>
+    mockCourses
+      .map(c => ({ ...c, distance: getDistanceMiles(currentUser.lat, currentUser.lng, c.lat, c.lng) }))
+      .sort((a, b) => a.distance - b.distance),
+    [currentUser.lat, currentUser.lng]
+  );
+
+  // Default: courses within 25 miles of user profile location
+  const nearbyCourses = useMemo(() =>
+    allCoursesWithDistance.filter(c => c.distance <= 25),
+    [allCoursesWithDistance]
+  );
+
+  // Filtered course list based on search query (name or zip)
+  const filteredCourseList = useMemo(() => {
+    const q = courseSearchActive.trim().toLowerCase();
+    if (!q) return nearbyCourses;
+
+    // Zip code search
+    if (/^\d{5}$/.test(q)) {
+      const coords = getCoordinatesForZip(q);
+      if (coords) {
+        return mockCourses
+          .map(c => ({ ...c, distance: getDistanceMiles(coords.lat, coords.lng, c.lat, c.lng) }))
+          .filter(c => c.distance <= 25)
+          .sort((a, b) => a.distance - b.distance);
+      }
+      return [];
+    }
+
+    // Name search — search all courses, not just nearby
+    return allCoursesWithDistance.filter(c =>
+      c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q)
+    );
+  }, [courseSearchActive, nearbyCourses, allCoursesWithDistance]);
+
+  const courseSearchIsName = courseSearchActive.trim().length > 0 && !/^\d{5}$/.test(courseSearchActive.trim());
+  const courseGoogleUrl = courseSearchActive.trim()
+    ? `https://www.google.com/search?q=${encodeURIComponent(courseSearchActive.trim() + ' golf course tee times')}`
+    : '';
 
   const formatDate = (iso: string) => {
     const d = new Date(iso + 'T12:00:00');
@@ -284,8 +324,47 @@ export default function LetsPlayBuddy() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               <Star size={14} className="inline mr-1 -mt-0.5" /> Preferred Course
             </label>
+            {/* Course search input */}
+            <div className="flex gap-2 mb-2">
+              <div className="flex-1 relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name or zip code"
+                  value={courseSearchQuery}
+                  onChange={(e) => setCourseSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setCourseSearchActive(courseSearchQuery);
+                    }
+                  }}
+                  className="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:border-golf-500 bg-white"
+                />
+              </div>
+              <button
+                onClick={() => setCourseSearchActive(courseSearchQuery)}
+                className="px-3 py-2 bg-golf-700 text-white text-xs font-semibold rounded-xl hover:bg-golf-800 transition-colors"
+              >
+                <Search size={14} />
+              </button>
+              {courseSearchActive && (
+                <button
+                  onClick={() => { setCourseSearchActive(''); setCourseSearchQuery(''); }}
+                  className="px-2 py-2 text-xs text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            {courseSearchActive && (
+              <p className="text-xs text-gray-500 mb-2">
+                {filteredCourseList.length > 0
+                  ? `${filteredCourseList.length} course${filteredCourseList.length !== 1 ? 's' : ''} found`
+                  : 'No courses found in our list'}
+              </p>
+            )}
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {nearbyCourses.map(c => (
+              {filteredCourseList.map(c => (
                 <button
                   key={c.id}
                   onClick={() => setPrefCourse(c.id)}
@@ -302,6 +381,50 @@ export default function LetsPlayBuddy() {
                   {prefCourse === c.id && <Check size={16} className="text-golf-600" />}
                 </button>
               ))}
+              {/* Google fallback banner — when name search has no results */}
+              {courseSearchIsName && filteredCourseList.length === 0 && (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="h-20 bg-gradient-to-br from-golf-600 to-emerald-500 relative flex items-center justify-center">
+                    <Search size={28} className="text-white/30" />
+                    <div className="absolute top-2 left-2 bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      Web Result
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <h4 className="font-bold text-gray-900 text-sm capitalize">{courseSearchActive}</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">Not in our database — view on Google</p>
+                    <a
+                      href={courseGoogleUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 w-full mt-2 py-2 bg-golf-700 text-white text-xs font-semibold rounded-xl hover:bg-golf-800 transition-colors"
+                    >
+                      <ExternalLink size={12} />
+                      Search on Google
+                    </a>
+                  </div>
+                </div>
+              )}
+              {/* Compact Google link when results exist */}
+              {courseSearchIsName && filteredCourseList.length > 0 && (
+                <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                  <div className="p-2.5 flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-golf-600 to-emerald-500 flex items-center justify-center shrink-0">
+                      <Search size={14} className="text-white/70" />
+                    </div>
+                    <p className="text-xs text-gray-600 flex-1">Find more on Google</p>
+                    <a
+                      href={courseGoogleUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-golf-700 text-white text-[10px] font-semibold rounded-lg hover:bg-golf-800 transition-colors"
+                    >
+                      <ExternalLink size={10} />
+                      Google
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -311,7 +434,7 @@ export default function LetsPlayBuddy() {
               <MapPin size={14} className="inline mr-1 -mt-0.5" /> Alternate Courses (up to 3)
             </label>
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {nearbyCourses.filter(c => c.id !== prefCourse).map(c => (
+              {filteredCourseList.filter(c => c.id !== prefCourse).map(c => (
                 <button
                   key={c.id}
                   onClick={() => {
@@ -334,6 +457,49 @@ export default function LetsPlayBuddy() {
                   {altCourses.includes(c.id) && <Check size={16} className="text-golf-600" />}
                 </button>
               ))}
+              {/* Google fallback for alternate courses too */}
+              {courseSearchIsName && filteredCourseList.filter(c => c.id !== prefCourse).length === 0 && (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="h-20 bg-gradient-to-br from-golf-600 to-emerald-500 relative flex items-center justify-center">
+                    <Search size={28} className="text-white/30" />
+                    <div className="absolute top-2 left-2 bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      Web Result
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <h4 className="font-bold text-gray-900 text-sm capitalize">{courseSearchActive}</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">Not in our database — view on Google</p>
+                    <a
+                      href={courseGoogleUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 w-full mt-2 py-2 bg-golf-700 text-white text-xs font-semibold rounded-xl hover:bg-golf-800 transition-colors"
+                    >
+                      <ExternalLink size={12} />
+                      Search on Google
+                    </a>
+                  </div>
+                </div>
+              )}
+              {courseSearchIsName && filteredCourseList.filter(c => c.id !== prefCourse).length > 0 && (
+                <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                  <div className="p-2.5 flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-golf-600 to-emerald-500 flex items-center justify-center shrink-0">
+                      <Search size={14} className="text-white/70" />
+                    </div>
+                    <p className="text-xs text-gray-600 flex-1">Find more on Google</p>
+                    <a
+                      href={courseGoogleUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-golf-700 text-white text-[10px] font-semibold rounded-lg hover:bg-golf-800 transition-colors"
+                    >
+                      <ExternalLink size={10} />
+                      Google
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
