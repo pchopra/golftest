@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { MapPin, SlidersHorizontal, Search, Flame, Calendar } from 'lucide-react';
+import { MapPin, SlidersHorizontal, Search, Flame, Calendar, ExternalLink } from 'lucide-react';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { mockCourses, type GolfCourse } from '../data/mockCourses';
 import { hotDeals } from '../data/hotDeals';
@@ -17,9 +17,10 @@ export default function FindCourses() {
   const { latitude, longitude, loading, error, granted, requestLocation } = useGeolocation();
   const [sortMode, setSortMode] = useState<SortMode>('nearest');
   const [selectedCourse, setSelectedCourse] = useState<GolfCourse | null>(null);
-  const [zipCode, setZipCode] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
   const [zipCoords, setZipCoords] = useState<{ lat: number; lng: number; city: string } | null>(null);
-  const [zipError, setZipError] = useState('');
+  const [searchError, setSearchError] = useState('');
   const [radiusFilter, setRadiusFilter] = useState<RadiusFilter>(25);
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
@@ -34,20 +35,34 @@ export default function FindCourses() {
   const effectiveLat = zipCoords?.lat ?? latitude;
   const effectiveLng = zipCoords?.lng ?? longitude;
 
-  const handleZipSearch = useCallback(() => {
-    if (zipCode.length !== 5 || !/^\d{5}$/.test(zipCode)) {
-      setZipError('Enter a valid 5-digit zip code');
-      return;
-    }
-    const coords = getCoordinatesForZip(zipCode);
-    if (coords) {
-      setZipCoords(coords);
-      setZipError('');
+  const isZipCode = (value: string) => /^\d{5}$/.test(value.trim());
+
+  const handleSearch = useCallback(() => {
+    const query = searchQuery.trim();
+    if (!query) return;
+
+    if (isZipCode(query)) {
+      // Zip code search
+      const coords = getCoordinatesForZip(query);
+      if (coords) {
+        setZipCoords(coords);
+        setSearchError('');
+        setNameFilter('');
+      } else {
+        setSearchError('Invalid zip code. Please enter a valid US zip code.');
+        setZipCoords(null);
+      }
     } else {
-      setZipError('Invalid zip code. Please enter a valid US zip code.');
-      setZipCoords(null);
+      // Name search — filter courses by name
+      setNameFilter(query.toLowerCase());
+      setSearchError('');
     }
-  }, [zipCode]);
+  }, [searchQuery]);
+
+  const clearNameFilter = useCallback(() => {
+    setNameFilter('');
+    setSearchQuery('');
+  }, []);
 
   const coursesWithDistance = useMemo(() => {
     return mockCourses.map((course) => ({
@@ -60,9 +75,16 @@ export default function FindCourses() {
   }, [effectiveLat, effectiveLng]);
 
   const sortedCourses = useMemo(() => {
-    // Filter by radius when any location is available
     let filtered = [...coursesWithDistance];
-    if (effectiveLat && effectiveLng && radiusFilter) {
+
+    // If searching by name, filter by name match (ignores radius)
+    if (nameFilter) {
+      filtered = filtered.filter(({ course }) =>
+        course.name.toLowerCase().includes(nameFilter) ||
+        course.city.toLowerCase().includes(nameFilter)
+      );
+    } else if (effectiveLat && effectiveLng && radiusFilter) {
+      // Filter by radius when any location is available
       filtered = filtered.filter(
         ({ distance }) => distance !== null && distance <= radiusFilter
       );
@@ -82,7 +104,13 @@ export default function FindCourses() {
         break;
     }
     return filtered;
-  }, [coursesWithDistance, sortMode, effectiveLat, effectiveLng, radiusFilter]);
+  }, [coursesWithDistance, sortMode, effectiveLat, effectiveLng, radiusFilter, nameFilter]);
+
+  // Check if the name search found no results — we'll offer a Google search link
+  const showGoogleFallback = nameFilter && sortedCourses.length === 0;
+  const googleSearchUrl = nameFilter
+    ? `https://www.google.com/search?q=${encodeURIComponent(nameFilter + ' golf course tee times')}`
+    : '';
 
   // Nearest courses fallback — shown when radius filter yields no results
   const nearestFallback = useMemo(() => {
@@ -114,7 +142,9 @@ export default function FindCourses() {
     ? coursesWithDistance.find((c) => c.course.id === selectedCourse.id)?.distance ?? null
     : null;
 
-  const locationLabel = zipCoords
+  const locationLabel = nameFilter
+    ? `Searching courses by name`
+    : zipCoords
     ? radiusFilter
       ? `Courses within ${radiusFilter} mi of ${zipCoords.city}`
       : `Showing all courses near ${zipCoords.city}`
@@ -122,7 +152,7 @@ export default function FindCourses() {
     ? error
       ? 'Showing all courses'
       : 'Courses near your location'
-    : 'Search by zip code to find courses near you';
+    : 'Search by zip code or course name';
 
   return (
     <div className="min-h-screen pb-24">
@@ -131,34 +161,38 @@ export default function FindCourses() {
         <h1 className="text-2xl font-bold text-white mt-2">Find Courses</h1>
         <p className="text-golf-200 text-sm mt-1">{locationLabel}</p>
 
-        {/* Zip Code Search */}
+        {/* Search — zip code or course name */}
         <div className="mt-4 flex gap-2">
           <div className="flex-1 relative">
-            <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-golf-300" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-golf-300" />
             <input
               type="text"
-              inputMode="numeric"
-              maxLength={5}
-              placeholder="Enter zip code"
-              value={zipCode}
+              placeholder="Zip code or course name"
+              value={searchQuery}
               onChange={(e) => {
-                setZipCode(e.target.value.replace(/\D/g, ''));
-                setZipError('');
+                setSearchQuery(e.target.value);
+                setSearchError('');
               }}
-              onKeyDown={(e) => e.key === 'Enter' && handleZipSearch()}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               className="w-full pl-9 pr-3 py-2.5 bg-white/15 text-white placeholder-golf-300 text-sm rounded-xl border border-white/20 focus:outline-none focus:border-white/50 focus:bg-white/20"
             />
           </div>
           <button
-            onClick={handleZipSearch}
+            onClick={handleSearch}
             className="px-4 py-2.5 bg-white text-golf-800 text-sm font-semibold rounded-xl hover:bg-golf-50 transition-colors flex items-center gap-1.5"
           >
             <Search size={16} />
             Search
           </button>
         </div>
-        {zipError && (
-          <p className="text-red-300 text-xs mt-1.5 pl-1">{zipError}</p>
+        {searchError && (
+          <p className="text-red-300 text-xs mt-1.5 pl-1">{searchError}</p>
+        )}
+        {nameFilter && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-xs text-golf-200">Searching: &quot;{nameFilter}&quot;</span>
+            <button onClick={clearNameFilter} className="text-xs text-white/70 underline hover:text-white">Clear</button>
+          </div>
         )}
 
         {/* Radius filter — visible when any location is available */}
@@ -263,14 +297,52 @@ export default function FindCourses() {
       {/* Course list */}
       <div>
         {sortedCourses.length > 0 ? (
-          sortedCourses.map(({ course, distance }) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              distance={distance}
-              onSelect={setSelectedCourse}
-            />
-          ))
+          <>
+            {nameFilter && (
+              <p className="px-4 mb-2 text-xs text-gray-500">
+                {sortedCourses.length} course{sortedCourses.length !== 1 ? 's' : ''} matching &quot;{nameFilter}&quot;
+              </p>
+            )}
+            {sortedCourses.map(({ course, distance }) => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                distance={distance}
+                onSelect={setSelectedCourse}
+              />
+            ))}
+            {nameFilter && (
+              <div className="mx-4 mt-3 mb-2">
+                <a
+                  href={googleSearchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-2.5 text-sm font-medium text-golf-700 bg-golf-50 border border-golf-200 rounded-xl hover:bg-golf-100 transition-colors"
+                >
+                  <ExternalLink size={14} />
+                  Search Google for more results
+                </a>
+              </div>
+            )}
+          </>
+        ) : showGoogleFallback ? (
+          <div className="mx-4 mt-2 mb-4 p-5 rounded-2xl bg-gray-50 border border-gray-200 text-center">
+            <p className="text-sm font-semibold text-gray-800">
+              &quot;{nameFilter}&quot; not found in our courses
+            </p>
+            <p className="text-xs text-gray-500 mt-1 mb-3">
+              Try searching on Google for tee times and course info
+            </p>
+            <a
+              href={googleSearchUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-golf-700 text-white text-sm font-semibold rounded-xl hover:bg-golf-800 transition-colors"
+            >
+              <ExternalLink size={14} />
+              Search on Google
+            </a>
+          </div>
         ) : (effectiveLat && effectiveLng) && radiusFilter && nearestFallback.length > 0 ? (
           <>
             <div className="mx-4 mt-2 mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200">
