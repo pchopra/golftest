@@ -78,53 +78,17 @@ export default function LetsPlayBuddy() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeGroupId, chatGroups]);
 
-  if (loading) {
-    return (
-      <div className="px-4 pt-12 pb-28 text-center">
-        <div className="w-10 h-10 border-4 border-golf-200 border-t-golf-700 rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-sm text-gray-500">Loading your profile...</p>
-      </div>
-    );
-  }
-
-  if (!currentUser) {
-    return (
-      <div className="px-4 pt-12 pb-28 text-center">
-        <Users size={48} className="mx-auto text-gray-300 mb-4" />
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Sign In Required</h2>
-        <p className="text-sm text-gray-500 mb-6">Please sign in to find golf buddies and plan tee times together.</p>
-        <button
-          onClick={() => navigate('/login')}
-          className="px-6 py-3 rounded-xl bg-golf-700 text-white font-semibold text-sm hover:bg-golf-800 transition-colors"
-        >
-          Go to Sign In
-        </button>
-      </div>
-    );
-  }
-
-  const otherUsers = allUsers.filter(u => u.id !== currentUser.id);
-
-  // Get upcoming dates for the next 7 days
-  const upcomingDates: string[] = [];
-  const today = new Date();
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    upcomingDates.push(d.toISOString().split('T')[0]);
-  }
-
-  const timeSlots = ['7:00 AM', '9:30 AM', '11:00 AM', '2:00 PM', '3:00 PM'];
-
+  // All hooks must be called before any early return (Rules of Hooks)
   // Derive effective lat/lng from user's address zip code (if present), else profile lat/lng
   const userCoords = useMemo(() => {
+    if (!currentUser) return { lat: 37.7749, lng: -122.4194, zip: '' };
     const zipMatch = currentUser.address.match(/\b(\d{5})\b/);
     if (zipMatch) {
       const coords = getCoordinatesForZip(zipMatch[1]);
       if (coords) return { lat: coords.lat, lng: coords.lng, zip: zipMatch[1] };
     }
     return { lat: currentUser.lat, lng: currentUser.lng, zip: '' };
-  }, [currentUser.address, currentUser.lat, currentUser.lng]);
+  }, [currentUser?.address, currentUser?.lat, currentUser?.lng]);
 
   const allCoursesWithDistance = useMemo(() =>
     mockCourses
@@ -162,6 +126,45 @@ export default function LetsPlayBuddy() {
       c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q)
     );
   }, [courseSearchActive, nearest5, allCoursesWithDistance]);
+
+  // Early returns AFTER all hooks
+  if (loading) {
+    return (
+      <div className="px-4 pt-12 pb-28 text-center">
+        <div className="w-10 h-10 border-4 border-golf-200 border-t-golf-700 rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-sm text-gray-500">Loading your profile...</p>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="px-4 pt-12 pb-28 text-center">
+        <Users size={48} className="mx-auto text-gray-300 mb-4" />
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Sign In Required</h2>
+        <p className="text-sm text-gray-500 mb-6">Please sign in to find golf buddies and plan tee times together.</p>
+        <button
+          onClick={() => navigate('/login')}
+          className="px-6 py-3 rounded-xl bg-golf-700 text-white font-semibold text-sm hover:bg-golf-800 transition-colors"
+        >
+          Go to Sign In
+        </button>
+      </div>
+    );
+  }
+
+  const otherUsers = allUsers.filter(u => u.id !== currentUser.id);
+
+  // Get upcoming dates for the next 7 days
+  const upcomingDates: string[] = [];
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    upcomingDates.push(d.toISOString().split('T')[0]);
+  }
+
+  const timeSlots = ['7:00 AM', '9:30 AM', '11:00 AM', '2:00 PM', '3:00 PM'];
 
   const courseSearchIsName = courseSearchActive.trim().length > 0 && !/^\d{5}$/.test(courseSearchActive.trim());
   const courseGoogleUrl = courseSearchActive.trim()
