@@ -90,87 +90,106 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return stored ? JSON.parse(stored) : mockWeekendPolls;
   });
 
+  // Build a fallback User from Supabase auth session so the app never gets stuck
+  const buildFallbackUser = useCallback((userId: string, email: string, meta: Record<string, unknown> = {}): User => ({
+    id: userId,
+    firstName: (meta.first_name as string) || '',
+    lastName: (meta.last_name as string) || '',
+    email: email || '',
+    phone: (meta.phone as string) || '',
+    skillLevel: ((meta.skill_level as string) || 'Beginner') as User['skillLevel'],
+    gender: ((meta.gender as string) || 'Prefer not to say') as User['gender'],
+    address: (meta.address as string) || '',
+    lat: (meta.lat as number) ?? 37.7749,
+    lng: (meta.lng as number) ?? -122.4194,
+    profilePicture: (meta.profile_picture as string) || undefined,
+    createdAt: new Date().toISOString().split('T')[0],
+  }), []);
+
   // Load Supabase profile for authenticated user (creates profile if missing)
   const loadSupabaseProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    if (data) {
-      const user = profileToUser(data);
-      setCurrentUser(user);
-      setAllUsers(prev => {
-        const exists = prev.some(u => u.id === user.id);
-        return exists ? prev.map(u => u.id === user.id ? user : u) : [...prev, user];
-      });
-      return;
+      if (data) {
+        const user = profileToUser(data);
+        setCurrentUser(user);
+        setAllUsers(prev => {
+          const exists = prev.some(u => u.id === user.id);
+          return exists ? prev.map(u => u.id === user.id ? user : u) : [...prev, user];
+        });
+        return;
+      }
+    } catch (err) {
+      console.error('[GolfBuddy] Profile query failed:', err);
     }
 
     // Profile missing (trigger may have failed) — create it from auth metadata
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) return;
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const authUser = authData?.user;
+      if (!authUser) {
+        // No auth user — set a minimal fallback so the app doesn't blank out
+        const minimal = buildFallbackUser(userId, '');
+        setCurrentUser(minimal);
+        setAllUsers(prev => [...prev, minimal]);
+        return;
+      }
 
-    const meta = authUser.user_metadata || {};
-    const profileRow = {
-      id: userId,
-      first_name: meta.first_name || '',
-      last_name: meta.last_name || '',
-      email: authUser.email || '',
-      phone: meta.phone || '',
-      skill_level: meta.skill_level || 'Beginner',
-      gender: meta.gender || 'Prefer not to say',
-      address: meta.address || '',
-      lat: meta.lat ?? 37.7749,
-      lng: meta.lng ?? -122.4194,
-      profile_picture: meta.profile_picture || '',
-    };
-
-    const { data: inserted, error: insertErr } = await supabase
-      .from('profiles')
-      .upsert(profileRow, { onConflict: 'id' })
-      .select()
-      .single();
-
-    if (insertErr) {
-      console.error('[GolfBuddy] Failed to create profile fallback:', insertErr.message);
-      // Still set a user from metadata so the app is usable
-      const fallbackUser: User = {
+      const meta = authUser.user_metadata || {};
+      const profileRow = {
         id: userId,
-        firstName: meta.first_name || '',
-        lastName: meta.last_name || '',
+        first_name: meta.first_name || '',
+        last_name: meta.last_name || '',
         email: authUser.email || '',
         phone: meta.phone || '',
-        skillLevel: meta.skill_level || 'Beginner',
+        skill_level: meta.skill_level || 'Beginner',
         gender: meta.gender || 'Prefer not to say',
         address: meta.address || '',
         lat: meta.lat ?? 37.7749,
         lng: meta.lng ?? -122.4194,
-        profilePicture: meta.profile_picture || undefined,
-        createdAt: new Date().toISOString().split('T')[0],
+        profile_picture: meta.profile_picture || '',
       };
+
+      const { data: inserted, error: insertErr } = await supabase
+        .from('profiles')
+        .upsert(profileRow, { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (inserted && !insertErr) {
+        const user = profileToUser(inserted);
+        setCurrentUser(user);
+        setAllUsers(prev => [...prev, user]);
+        return;
+      }
+
+      // Upsert failed — use fallback from auth metadata
+      console.error('[GolfBuddy] Profile upsert failed:', insertErr?.message);
+      const fallbackUser = buildFallbackUser(userId, authUser.email || '', meta);
       setCurrentUser(fallbackUser);
       setAllUsers(prev => [...prev, fallbackUser]);
-      return;
+    } catch (err) {
+      console.error('[GolfBuddy] Profile creation failed:', err);
+      const minimal = buildFallbackUser(userId, '');
+      setCurrentUser(minimal);
+      setAllUsers(prev => [...prev, minimal]);
     }
-
-    if (inserted) {
-      const user = profileToUser(inserted);
-      setCurrentUser(user);
-      setAllUsers(prev => [...prev, user]);
-    }
-  }, []);
+  }, [buildFallbackUser]);
 
   // Listen for Supabase auth changes
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       setSession(s);
       if (s?.user) {
-        await loadSupabaseProfile(s.user.id);
+        try { await loadSupabaseProfile(s.user.id); } catch (e) { console.error('[GolfBuddy] getSession profile load failed:', e); }
       }
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
@@ -229,12 +248,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Supabase email+password login
   const loginWithSupabase = async (email: string, password: string): Promise<{ error: string | null }> => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
-    if (data.user) {
-      await loadSupabaseProfile(data.user.id);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return { error: error.message };
+      if (data.user) {
+        await loadSupabaseProfile(data.user.id);
+      }
+      return { error: null };
+    } catch (e) {
+      console.error('[GolfBuddy] loginWithSupabase error:', e);
+      return { error: 'Login failed. Please try again.' };
     }
-    return { error: null };
   };
 
   // Supabase email+password registration

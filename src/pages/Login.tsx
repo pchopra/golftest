@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, UserPlus, Loader2 } from 'lucide-react';
@@ -20,6 +20,15 @@ export default function Login() {
   const [error, setError] = useState('');
   const [supaLoading, setSupaLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [pendingRedirect, setPendingRedirect] = useState(false);
+
+  // Navigate to /buddy only AFTER React has committed the currentUser state update
+  useEffect(() => {
+    if (pendingRedirect && currentUser) {
+      setPendingRedirect(false);
+      navigate('/buddy');
+    }
+  }, [pendingRedirect, currentUser, navigate]);
 
   // Login fields
   const [loginEmail, setLoginEmail] = useState('');
@@ -52,7 +61,7 @@ export default function Login() {
       return;
     }
     login(foundUser.email);
-    navigate('/buddy');
+    setPendingRedirect(true);
   };
 
   // Quick test account
@@ -69,7 +78,7 @@ export default function Login() {
       lat: 37.7749 + (Math.random() - 0.5) * 0.2,
       lng: -122.4194 + (Math.random() - 0.5) * 0.2,
     });
-    navigate('/buddy');
+    setPendingRedirect(true);
   };
 
   // Supabase login handler
@@ -86,13 +95,19 @@ export default function Login() {
       return;
     }
     setSupaLoading(true);
-    const { error: err } = await loginWithSupabase(loginEmail.trim(), loginPassword);
-    setSupaLoading(false);
-    if (err) {
-      setError(err);
-      return;
+    try {
+      const { error: err } = await loginWithSupabase(loginEmail.trim(), loginPassword);
+      setSupaLoading(false);
+      if (err) {
+        setError(err);
+        return;
+      }
+      setPendingRedirect(true);
+    } catch (e) {
+      setSupaLoading(false);
+      setError('Login failed. Please try again.');
+      console.error('[GolfBuddy] Login error:', e);
     }
-    navigate('/buddy');
   };
 
   // Supabase register handler
