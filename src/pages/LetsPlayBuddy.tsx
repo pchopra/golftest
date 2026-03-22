@@ -618,6 +618,16 @@ export default function LetsPlayBuddy() {
                           </span>
                         )}
                       </div>
+                      {!isMe && member.phone && (
+                        <div className="flex items-center gap-0.5 ml-1">
+                          <a href={`sms:${member.phone}`} className="p-1 rounded-full text-golf-600 hover:bg-golf-50 transition-colors" title={`Text ${member.firstName}`}>
+                            <MessageCircle size={13} />
+                          </a>
+                          <a href={`tel:${member.phone}`} className="p-1 rounded-full text-blue-500 hover:bg-blue-50 transition-colors" title={`Call ${member.firstName}`}>
+                            <Phone size={13} />
+                          </a>
+                        </div>
+                      )}
                     </div>
                     {currentIsAdmin && !isMe && (
                       <div className="flex items-center gap-1">
@@ -1055,6 +1065,18 @@ function AvailabilityResults({
                   <span>{user.skillLevel}</span>
                 </div>
               </div>
+              <div className="flex items-center gap-1 shrink-0">
+                {user.phone && (
+                  <a href={`sms:${user.phone}`} className="p-2 rounded-full bg-golf-50 text-golf-700 hover:bg-golf-100 transition-colors" title={`Text ${user.firstName}`}>
+                    <MessageCircle size={16} />
+                  </a>
+                )}
+                {user.phone && (
+                  <a href={`tel:${user.phone}`} className="p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors" title={`Call ${user.firstName}`}>
+                    <Phone size={16} />
+                  </a>
+                )}
+              </div>
             </div>
             {avail && (
               <div className="space-y-1 ml-[52px]">
@@ -1372,9 +1394,19 @@ function GroupAvailabilityViewer({
                       <p className="text-xs font-semibold text-gray-900">{user!.firstName} {user!.lastName}</p>
                       <p className="text-[10px] text-gray-500">{user!.skillLevel}</p>
                     </div>
-                    <div className="flex gap-1 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                       {avail?.needsRide && <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">Needs ride</span>}
                       {avail?.canOfferRide && <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-medium">Can drive</span>}
+                      {user!.id !== _currentUserId && user!.phone && (
+                        <>
+                          <a href={`sms:${user!.phone}`} className="p-1 rounded-full text-golf-600 hover:bg-golf-100 transition-colors" title={`Text ${user!.firstName}`}>
+                            <MessageCircle size={14} />
+                          </a>
+                          <a href={`tel:${user!.phone}`} className="p-1 rounded-full text-blue-500 hover:bg-blue-100 transition-colors" title={`Call ${user!.firstName}`}>
+                            <Phone size={14} />
+                          </a>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1390,7 +1422,17 @@ function GroupAvailabilityViewer({
                 {unavailableMembers.map(({ user }) => (
                   <div key={user!.id} className="flex items-center gap-2.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 opacity-60">
                     <Avatar firstName={user!.firstName} lastName={user!.lastName} profilePicture={user!.profilePicture} size="sm" />
-                    <p className="text-xs text-gray-500">{user!.firstName} {user!.lastName}</p>
+                    <p className="flex-1 text-xs text-gray-500">{user!.firstName} {user!.lastName}</p>
+                    {user!.id !== _currentUserId && user!.phone && (
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <a href={`sms:${user!.phone}`} className="p-1 rounded-full text-gray-400 hover:text-golf-600 transition-colors" title={`Text ${user!.firstName}`}>
+                          <MessageCircle size={13} />
+                        </a>
+                        <a href={`tel:${user!.phone}`} className="p-1 rounded-full text-gray-400 hover:text-blue-500 transition-colors" title={`Call ${user!.firstName}`}>
+                          <Phone size={13} />
+                        </a>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
