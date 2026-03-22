@@ -26,6 +26,11 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [street, setStreet] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [zip, setZip] = useState('');
 
   // Supabase login handler
   const handleSupabaseLogin = async (e: React.FormEvent) => {
@@ -60,6 +65,9 @@ export default function Login() {
     if (!lastName.trim()) missing.push('Last Name');
     if (!email.trim()) missing.push('Email');
     if (!password.trim()) missing.push('Password');
+    if (!phone.trim()) missing.push('Phone Number');
+    if (!city.trim()) missing.push('City');
+    if (!state.trim()) missing.push('State');
     if (missing.length > 0) {
       setError(`Required: ${missing.join(', ')}`);
       return;
@@ -72,16 +80,19 @@ export default function Login() {
       setError('Passwords do not match');
       return;
     }
+    const fullAddress = [street.trim(), city.trim(), `${state.trim()} ${zip.trim()}`.trim()]
+      .filter(Boolean)
+      .join(', ');
     setSupaLoading(true);
     const { error: err } = await registerWithSupabase(email.trim(), password, {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      phone: '',
+      phone: phone.trim(),
       skillLevel: 'Beginner',
       gender: 'Prefer not to say',
-      address: '',
-      lat: 37.7749,
-      lng: -122.4194,
+      address: fullAddress,
+      lat: 37.7749 + (Math.random() - 0.5) * 0.2,
+      lng: -122.4194 + (Math.random() - 0.5) * 0.2,
     });
     setSupaLoading(false);
     if (err) {
@@ -298,6 +309,56 @@ export default function Login() {
                 placeholder="Re-enter your password"
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                inputMode="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="(415) 555-0100"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Home Address <span className="text-red-500">*</span></label>
+              <p className="text-xs text-gray-400 mb-2">Used to find courses and buddies near you</p>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={street}
+                  onChange={e => setStreet(e.target.value)}
+                  placeholder="Street address (optional)"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={e => setCity(e.target.value)}
+                    placeholder="City"
+                    className="w-full px-3 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+                  />
+                  <input
+                    type="text"
+                    value={state}
+                    onChange={e => setState(e.target.value)}
+                    placeholder="State"
+                    className="w-full px-3 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+                  />
+                </div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={zip}
+                  onChange={e => setZip(e.target.value)}
+                  placeholder="ZIP Code (optional)"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
+                />
+              </div>
             </div>
           </div>
 
