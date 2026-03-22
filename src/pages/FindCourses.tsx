@@ -93,18 +93,19 @@ export default function FindCourses() {
       .slice(0, 3);
   }, [sortedCourses, coursesWithDistance, effectiveLat, effectiveLng, radiusFilter]);
 
-  // Filter hot deals by selected date's day of week, sorted by distance
+  // Filter hot deals by selected date's day of week and proximity, sorted by distance
   const activeDeals = useMemo(() => {
     const date = new Date(selectedDate + 'T12:00:00');
     const dayOfWeek = date.getDay();
-    const filtered = hotDeals.filter((deal) => deal.validDays.includes(dayOfWeek));
+    let filtered = hotDeals.filter((deal) => deal.validDays.includes(dayOfWeek));
 
     if (effectiveLat && effectiveLng) {
-      filtered.sort((a, b) => {
-        const distA = getDistanceMiles(effectiveLat!, effectiveLng!, a.lat, a.lng);
-        const distB = getDistanceMiles(effectiveLat!, effectiveLng!, b.lat, b.lng);
-        return distA - distB;
-      });
+      // Only show deals within 50 miles of the user's location
+      filtered = filtered
+        .map(deal => ({ deal, dist: getDistanceMiles(effectiveLat!, effectiveLng!, deal.lat, deal.lng) }))
+        .filter(({ dist }) => dist <= 50)
+        .sort((a, b) => a.dist - b.dist)
+        .map(({ deal }) => deal);
     }
     return filtered;
   }, [selectedDate, effectiveLat, effectiveLng]);
@@ -119,9 +120,9 @@ export default function FindCourses() {
       : `Showing all courses near ${zipCoords.city}`
     : granted && latitude
     ? error
-      ? 'Showing Bay Area courses'
+      ? 'Showing all courses'
       : 'Courses near your location'
-    : 'Discover nearby golf courses';
+    : 'Search by zip code to find courses near you';
 
   return (
     <div className="min-h-screen pb-24">
