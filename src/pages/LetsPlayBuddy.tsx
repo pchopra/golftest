@@ -19,7 +19,7 @@ type MainTab = 'buddies' | 'chat';
 type AvailFilter = 'all' | 'two' | 'four' | 'moreThanTwo';
 
 export default function LetsPlayBuddy() {
-  const { currentUser, allUsers, availability, chatGroups, weekendPolls, setMyAvailability, getMyAvailability, createChatGroup, deleteGroup, addGroupMember, removeGroupMember, makeGroupAdmin, leaveGroup, sendMessage, createWeekendPoll, voteOnPoll } = useAuth();
+  const { currentUser, allUsers, availability, chatGroups, weekendPolls, loading, setMyAvailability, getMyAvailability, createChatGroup, deleteGroup, addGroupMember, removeGroupMember, makeGroupAdmin, leaveGroup, sendMessage, createWeekendPoll, voteOnPoll } = useAuth();
   const navigate = useNavigate();
 
   const [mainTab, setMainTab] = useState<MainTab>('buddies');
@@ -77,6 +77,15 @@ export default function LetsPlayBuddy() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeGroupId, chatGroups]);
+
+  if (loading) {
+    return (
+      <div className="px-4 pt-12 pb-28 text-center">
+        <div className="w-10 h-10 border-4 border-golf-200 border-t-golf-700 rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-sm text-gray-500">Loading your profile...</p>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return (

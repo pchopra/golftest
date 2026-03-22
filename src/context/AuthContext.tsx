@@ -164,10 +164,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Listen for Supabase auth changes
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       setSession(s);
       if (s?.user) {
-        loadSupabaseProfile(s.user.id);
+        await loadSupabaseProfile(s.user.id);
       }
       setLoading(false);
     });
@@ -229,8 +229,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Supabase email+password login
   const loginWithSupabase = async (email: string, password: string): Promise<{ error: string | null }> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
+    if (data.user) {
+      await loadSupabaseProfile(data.user.id);
+    }
     return { error: null };
   };
 
