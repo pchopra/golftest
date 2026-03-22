@@ -30,7 +30,7 @@ interface AuthContextType {
   sendMessage: (groupId: string, text: string) => void;
   createWeekendPoll: (groupId: string, customDates?: string[], customTimes?: string[]) => WeekendPoll;
   voteOnPoll: (pollId: string, vote: Omit<PollVote, 'userId'>) => void;
-  updateProfilePicture: (dataUrl: string) => void;
+  updateProfilePicture: (dataUrl: string) => Promise<void> | void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -322,14 +322,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCurrentUser(null);
   };
 
-  const updateProfilePicture = (dataUrl: string) => {
+  const updateProfilePicture = async (dataUrl: string) => {
     if (!currentUser) return;
     const updated = { ...currentUser, profilePicture: dataUrl };
     setCurrentUser(updated);
     setAllUsers(prev => prev.map(u => u.id === currentUser.id ? updated : u));
     // Sync to Supabase if authenticated
     if (session) {
-      supabase.from('profiles').update({ profile_picture: dataUrl }).eq('id', currentUser.id);
+      const { error } = await supabase.from('profiles').update({ profile_picture: dataUrl }).eq('id', currentUser.id);
+      if (error) {
+        console.error('[GolfBuddy] Failed to save profile picture:', error.message);
+      }
     }
   };
 

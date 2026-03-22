@@ -112,6 +112,7 @@ export default function Login() {
     if (!email.trim()) missing.push('Email');
     if (!password.trim()) missing.push('Password');
     if (!phone.trim()) missing.push('Phone Number');
+    if (!zip.trim()) missing.push('ZIP Code');
     if (!city.trim()) missing.push('City');
     if (!state.trim()) missing.push('State');
     if (missing.length > 0) {
@@ -129,8 +130,8 @@ export default function Login() {
     const fullAddress = [street.trim(), city.trim(), `${state.trim()} ${zip.trim()}`.trim()]
       .filter(Boolean)
       .join(', ');
-    // Derive coordinates from zip code; fall back to SF default
-    const zipCoords = zip.trim() ? getCoordinatesForZip(zip.trim()) : null;
+    // Derive coordinates from zip code
+    const zipCoords = getCoordinatesForZip(zip.trim());
     const userLat = zipCoords?.lat ?? 37.7749;
     const userLng = zipCoords?.lng ?? -122.4194;
     setSupaLoading(true);
@@ -168,17 +169,26 @@ export default function Login() {
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (!file) return;
-              if (file.size > 2 * 1024 * 1024) {
-                alert('Image must be under 2 MB');
+              if (file.size > 5 * 1024 * 1024) {
+                alert('Image must be under 5 MB');
                 return;
               }
-              const reader = new FileReader();
-              reader.onload = () => {
-                if (typeof reader.result === 'string') {
-                  updateProfilePicture(reader.result);
-                }
+              // Compress and resize image to keep the stored data small
+              const img = new Image();
+              img.onload = () => {
+                const MAX = 256;
+                let w = img.width, h = img.height;
+                if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                else { w = Math.round(w * MAX / h); h = MAX; }
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                updateProfilePicture(dataUrl);
+                URL.revokeObjectURL(img.src);
               };
-              reader.readAsDataURL(file);
+              img.src = URL.createObjectURL(file);
               e.target.value = '';
             }}
           />
@@ -500,7 +510,7 @@ export default function Login() {
                   inputMode="numeric"
                   value={zip}
                   onChange={e => setZip(e.target.value)}
-                  placeholder="ZIP Code (optional)"
+                  placeholder="ZIP Code *"
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-golf-500 focus:border-transparent"
                 />
               </div>
