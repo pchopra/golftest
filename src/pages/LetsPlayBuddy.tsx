@@ -323,38 +323,34 @@ export default function LetsPlayBuddy() {
             <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
               <Calendar size={14} className="-mt-0.5" /> Available Dates
               <span className="text-xs font-normal text-gray-400 ml-1">({selDates.length}/5 selected)</span>
-              <div className="ml-auto relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const input = document.getElementById('buddy-date-picker') as HTMLInputElement;
-                    if (input) {
-                      input.focus();
-                      input.showPicker();
-                    }
-                  }}
-                  className="p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors"
-                  title="Pick a date from calendar"
-                >
-                  <Plus size={14} />
-                </button>
-                <input
-                  id="buddy-date-picker"
-                  type="date"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  min={new Date().toISOString().split('T')[0]}
-                  onChange={(e) => {
-                    const date = e.target.value;
-                    if (date && !selDates.includes(date)) {
-                      setSelDates(prev => {
-                        const next = prev.length >= 5 ? [...prev.slice(1), date] : [...prev, date];
-                        return next.sort();
-                      });
-                    }
-                    e.target.value = '';
-                  }}
-                />
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.getElementById('buddy-date-picker') as HTMLInputElement;
+                  if (input) { input.showPicker(); }
+                }}
+                className="ml-auto p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors"
+                title="Pick a date from calendar"
+              >
+                <Plus size={14} />
+              </button>
+              <input
+                id="buddy-date-picker"
+                type="date"
+                className="sr-only"
+                tabIndex={-1}
+                min={new Date().toISOString().split('T')[0]}
+                onBlur={(e) => {
+                  const date = e.target.value;
+                  if (date && !selDates.includes(date)) {
+                    setSelDates(prev => {
+                      const next = prev.length >= 5 ? [...prev.slice(1), date] : [...prev, date];
+                      return next.sort();
+                    });
+                  }
+                  e.target.value = '';
+                }}
+              />
             </div>
             <div className="flex flex-wrap gap-2">
               {upcomingDates.map(date => {
@@ -398,39 +394,35 @@ export default function LetsPlayBuddy() {
             <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
               <Clock size={14} className="-mt-0.5" /> Available Times
               <span className="text-xs font-normal text-gray-400 ml-1">({selTimes.length}/3 selected)</span>
-              <div className="ml-auto relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const input = document.getElementById('buddy-time-picker') as HTMLInputElement;
-                    if (input) {
-                      input.focus();
-                      input.showPicker();
-                    }
-                  }}
-                  className="p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors"
-                  title="Pick a custom time"
-                >
-                  <Plus size={14} />
-                </button>
-                <input
-                  id="buddy-time-picker"
-                  type="time"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    if (!raw) return;
-                    const [h, m] = raw.split(':').map(Number);
-                    const ampm = h >= 12 ? 'PM' : 'AM';
-                    const h12 = h % 12 || 12;
-                    const formatted = `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
-                    if (!selTimes.includes(formatted)) {
-                      setSelTimes(prev => prev.length >= 3 ? [...prev.slice(1), formatted] : [...prev, formatted]);
-                    }
-                    e.target.value = '';
-                  }}
-                />
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.getElementById('buddy-time-picker') as HTMLInputElement;
+                  if (input) { input.showPicker(); }
+                }}
+                className="ml-auto p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors"
+                title="Pick a custom time"
+              >
+                <Plus size={14} />
+              </button>
+              <input
+                id="buddy-time-picker"
+                type="time"
+                className="sr-only"
+                tabIndex={-1}
+                onBlur={(e) => {
+                  const raw = e.target.value;
+                  if (!raw) return;
+                  const [h, m] = raw.split(':').map(Number);
+                  const ampm = h >= 12 ? 'PM' : 'AM';
+                  const h12 = h % 12 || 12;
+                  const formatted = `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+                  if (!selTimes.includes(formatted)) {
+                    setSelTimes(prev => prev.length >= 3 ? [...prev.slice(1), formatted] : [...prev, formatted]);
+                  }
+                  e.target.value = '';
+                }}
+              />
             </div>
             <div className="flex flex-wrap gap-2">
               {timeSlots.map(time => {
@@ -1367,32 +1359,31 @@ function WeekendPollPanel({
           {/* Poll Dates */}
           <div className="flex items-center gap-1.5 mb-1">
             <p className="text-[10px] font-semibold text-gray-500 uppercase">Dates</p>
-            <div className="ml-auto relative">
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.getElementById('new-poll-date-picker') as HTMLInputElement;
-                  if (input) { input.focus(); input.showPicker(); }
-                }}
-                className="p-1 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
-                title="Add a date"
-              >
-                <Plus size={12} />
-              </button>
-              <input
-                id="new-poll-date-picker"
-                type="date"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                min={new Date().toISOString().split('T')[0]}
-                onChange={(e) => {
-                  const date = e.target.value;
-                  if (date && !newPollDates.includes(date)) {
-                    setNewPollDates(prev => [...prev, date].sort());
-                  }
-                  e.target.value = '';
-                }}
-              />
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const input = document.getElementById('new-poll-date-picker') as HTMLInputElement;
+                if (input) { input.showPicker(); }
+              }}
+              className="ml-auto p-1 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+              title="Add a date"
+            >
+              <Plus size={12} />
+            </button>
+            <input
+              id="new-poll-date-picker"
+              type="date"
+              className="sr-only"
+              tabIndex={-1}
+              min={new Date().toISOString().split('T')[0]}
+              onBlur={(e) => {
+                const date = e.target.value;
+                if (date && !newPollDates.includes(date)) {
+                  setNewPollDates(prev => [...prev, date].sort());
+                }
+                e.target.value = '';
+              }}
+            />
           </div>
           <div className="flex flex-wrap gap-1.5 mb-2">
             {newPollDates.length === 0 && <p className="text-[10px] text-gray-400 italic">Tap + to add dates (defaults to this weekend)</p>}
@@ -1410,33 +1401,32 @@ function WeekendPollPanel({
           {/* Poll Times */}
           <div className="flex items-center gap-1.5 mb-1">
             <p className="text-[10px] font-semibold text-gray-500 uppercase">Times</p>
-            <div className="ml-auto relative">
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.getElementById('new-poll-time-picker') as HTMLInputElement;
-                  if (input) { input.focus(); input.showPicker(); }
-                }}
-                className="p-1 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
-                title="Add a time"
-              >
-                <Plus size={12} />
-              </button>
-              <input
-                id="new-poll-time-picker"
-                type="time"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  if (!raw) return;
-                  const formatted = formatTimeRaw(raw);
-                  if (!newPollTimes.includes(formatted)) {
-                    setNewPollTimes(prev => [...prev, formatted]);
-                  }
-                  e.target.value = '';
-                }}
-              />
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const input = document.getElementById('new-poll-time-picker') as HTMLInputElement;
+                if (input) { input.showPicker(); }
+              }}
+              className="ml-auto p-1 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+              title="Add a time"
+            >
+              <Plus size={12} />
+            </button>
+            <input
+              id="new-poll-time-picker"
+              type="time"
+              className="sr-only"
+              tabIndex={-1}
+              onBlur={(e) => {
+                const raw = e.target.value;
+                if (!raw) return;
+                const formatted = formatTimeRaw(raw);
+                if (!newPollTimes.includes(formatted)) {
+                  setNewPollTimes(prev => [...prev, formatted]);
+                }
+                e.target.value = '';
+              }}
+            />
           </div>
           <div className="flex flex-wrap gap-1.5 mb-3">
             {newPollTimes.length === 0 && <p className="text-[10px] text-gray-400 italic">Tap + to add times (defaults to common tee times)</p>}
