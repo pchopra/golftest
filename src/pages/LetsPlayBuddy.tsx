@@ -164,17 +164,20 @@ export default function LetsPlayBuddy() {
     setChatInput('');
   };
 
-  const handleGroupChat = (memberIds: string[]) => {
+  const handleGroupChat = (memberIds: string[], dateStr?: string, timeStr?: string) => {
     // Create a new chat group with the given members (voters / available buddies)
     const uniqueIds = [...new Set([currentUser.id, ...memberIds])];
     const memberNames = uniqueIds
       .filter(id => id !== currentUser.id)
       .map(id => getUserById(id)?.firstName)
       .filter(Boolean);
-    const groupName = memberNames.length > 0
-      ? `Tee Time - ${memberNames.join(', ')}`
-      : 'Tee Time Chat';
-    const group = createChatGroup(groupName, uniqueIds);
+    const dateTimePart = [dateStr && formatDate(dateStr), timeStr].filter(Boolean).join(' @ ');
+    const groupName = dateTimePart
+      ? `Tee Time - ${dateTimePart}`
+      : memberNames.length > 0
+        ? `Tee Time - ${memberNames.join(', ')}`
+        : 'Tee Time Chat';
+    const group = createChatGroup(groupName, uniqueIds, dateStr, timeStr);
     setShowPollPanel(false);
     setShowAvailViewer(false);
     setActiveGroupId(group.id);
@@ -424,6 +427,18 @@ export default function LetsPlayBuddy() {
               <p className="text-xs text-gray-500">
                 {group.memberIds.map(id => getUserById(id)?.firstName).filter(Boolean).join(', ')}
               </p>
+              {group.teeDate && (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-golf-700 bg-golf-50 border border-golf-200 rounded px-1.5 py-0.5">
+                    <Calendar size={10} /> {formatDate(group.teeDate)}
+                  </span>
+                  {group.teeTime && (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-golf-700 bg-golf-50 border border-golf-200 rounded px-1.5 py-0.5">
+                      <Clock size={10} /> {group.teeTime}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             <button
               onClick={() => setShowGroupAvailability(!showGroupAvailability)}
@@ -681,6 +696,11 @@ export default function LetsPlayBuddy() {
                       <p className="text-xs text-green-100 mb-1.5">
                         {group.memberIds.map(id => getUserById(id)?.firstName).filter(Boolean).join(', ')}
                       </p>
+                      {group.teeDate && (
+                        <p className="text-[10px] text-green-200 mb-1 flex items-center gap-1">
+                          <Calendar size={10} /> {formatDate(group.teeDate)}{group.teeTime && ` @ ${group.teeTime}`}
+                        </p>
+                      )}
                       {lastMsg && (
                         <p className="text-xs text-green-200 truncate">
                           <span className="font-medium">{lastSender?.firstName}:</span> {lastMsg.text}
@@ -840,7 +860,7 @@ function WeekendPollPanel({
   availability: BuddyAvailability[];
   onCreatePoll: () => void;
   onVote: (pollId: string) => void;
-  onGroupChat: (memberIds: string[]) => void;
+  onGroupChat: (memberIds: string[], dateStr?: string, timeStr?: string) => void;
   onGroupCall: (memberIds: string[]) => void;
   pollSelDates: string[]; setPollSelDates: (d: string[]) => void;
   pollSelTimes: string[]; setPollSelTimes: (t: string[]) => void;
@@ -947,7 +967,7 @@ function WeekendPollPanel({
                       <p className="text-[10px] font-semibold text-gray-500 uppercase">Votes ({poll.votes.length})</p>
                       {poll.votes.length > 0 && (
                         <div className="flex gap-1.5">
-                          <button onClick={() => onGroupChat(poll.votes.map(v => v.userId))} className="flex items-center gap-0.5 text-[9px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-2 py-1 hover:bg-green-100 transition-colors">
+                          <button onClick={() => onGroupChat(poll.votes.map(v => v.userId), poll.weekendDate, poll.timeOptions[0])} className="flex items-center gap-0.5 text-[9px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-2 py-1 hover:bg-green-100 transition-colors">
                             <MessageCircle size={11} /> Group Chat
                           </button>
                           <button onClick={() => onGroupCall(group.memberIds)} className="flex items-center gap-0.5 text-[9px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1 hover:bg-blue-100 transition-colors">
@@ -1002,7 +1022,7 @@ function GroupAvailabilityViewer({
   viewTime: string; setViewTime: (t: string) => void;
   upcomingDates: string[];
   timeSlots: string[];
-  onGroupChat: (memberIds: string[]) => void;
+  onGroupChat: (memberIds: string[], dateStr?: string, timeStr?: string) => void;
   onGroupCall: (memberIds: string[]) => void;
 }) {
   const availableMembers = group.memberIds
@@ -1070,7 +1090,7 @@ function GroupAvailabilityViewer({
               </p>
               {availableMembers.length > 0 && (
                 <div className="flex gap-1.5">
-                  <button onClick={() => onGroupChat(availableMembers.map(m => m.user!.id))} className="flex items-center gap-0.5 text-[9px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-2 py-1 hover:bg-green-100 transition-colors">
+                  <button onClick={() => onGroupChat(availableMembers.map(m => m.user!.id), viewDate || undefined, viewTime || undefined)} className="flex items-center gap-0.5 text-[9px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-2 py-1 hover:bg-green-100 transition-colors">
                     <MessageCircle size={11} /> Group Chat
                   </button>
                   <button onClick={() => onGroupCall(availableMembers.map(m => m.user!.id))} className="flex items-center gap-0.5 text-[9px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1 hover:bg-blue-100 transition-colors">

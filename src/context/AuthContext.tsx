@@ -21,7 +21,7 @@ interface AuthContextType {
   setMyAvailability: (avail: Omit<BuddyAvailability, 'userId'>) => void;
   getMyAvailability: () => BuddyAvailability | undefined;
   toggleFreeNow: (until: string) => void;
-  createChatGroup: (name: string, memberIds: string[]) => ChatGroup;
+  createChatGroup: (name: string, memberIds: string[], teeDate?: string, teeTime?: string) => ChatGroup;
   sendMessage: (groupId: string, text: string) => void;
   createWeekendPoll: (groupId: string) => WeekendPoll;
   voteOnPoll: (pollId: string, vote: Omit<PollVote, 'userId'>) => void;
@@ -317,7 +317,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return availability.find(a => a.userId === currentUser.id);
   };
 
-  const createChatGroup = (name: string, memberIds: string[]): ChatGroup => {
+  const createChatGroup = (name: string, memberIds: string[], teeDate?: string, teeTime?: string): ChatGroup => {
     const group: ChatGroup = {
       id: `group-${Date.now()}`,
       name,
@@ -325,6 +325,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createdBy: currentUser?.id || '',
       createdAt: new Date().toISOString(),
       messages: [],
+      ...(teeDate && { teeDate }),
+      ...(teeTime && { teeTime }),
     };
     setChatGroups(prev => [...prev, group]);
     return group;

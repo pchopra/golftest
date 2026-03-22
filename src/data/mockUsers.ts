@@ -55,6 +55,8 @@ export interface ChatGroup {
   createdBy: string;
   createdAt: string;
   messages: ChatMessage[];
+  teeDate?: string;
+  teeTime?: string;
 }
 
 export interface ChatMessage {
