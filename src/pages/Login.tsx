@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, UserPlus, Loader2 } from 'lucide-react';
 import { getCoordinatesForZip } from '../data/zipCoordinates';
@@ -15,20 +14,12 @@ export default function Login() {
     updateProfilePicture,
   } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('login');
   const [error, setError] = useState('');
   const [supaLoading, setSupaLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
-  const [pendingRedirect, setPendingRedirect] = useState(false);
 
-  // Navigate to /buddy only AFTER React has committed the currentUser state update
-  useEffect(() => {
-    if (pendingRedirect && currentUser) {
-      setPendingRedirect(false);
-      navigate('/buddy');
-    }
-  }, [pendingRedirect, currentUser, navigate]);
+  const goToBuddy = () => { window.location.hash = '/buddy'; };
 
   // Login fields
   const [loginEmail, setLoginEmail] = useState('');
@@ -61,7 +52,7 @@ export default function Login() {
       return;
     }
     login(foundUser.email);
-    setPendingRedirect(true);
+    goToBuddy();
   };
 
   // Quick test account
@@ -78,7 +69,7 @@ export default function Login() {
       lat: 37.7749 + (Math.random() - 0.5) * 0.2,
       lng: -122.4194 + (Math.random() - 0.5) * 0.2,
     });
-    setPendingRedirect(true);
+    goToBuddy();
   };
 
   // Supabase login handler
@@ -102,7 +93,7 @@ export default function Login() {
         setError(err);
         return;
       }
-      setPendingRedirect(true);
+      goToBuddy();
     } catch (e) {
       setSupaLoading(false);
       setError('Login failed. Please try again.');
