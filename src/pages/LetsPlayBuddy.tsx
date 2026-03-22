@@ -870,7 +870,14 @@ export default function LetsPlayBuddy() {
             getUserById={getUserById}
             formatDate={formatDate}
             availability={availability}
-            onCreatePoll={(dates, times) => createWeekendPoll(group.id, dates, times)}
+            onCreatePoll={(dates, times, message) => {
+              const poll = createWeekendPoll(group.id, dates, times);
+              if (message) {
+                const dateInfo = poll.dateOptions.map(d => formatDate(d)).join(', ');
+                const timeInfo = poll.timeOptions.join(', ');
+                sendMessage(group.id, `📊 New Poll: ${message}\n📅 ${dateInfo}\n🕐 ${timeInfo}`);
+              }
+            }}
             onVote={(pollId) => {
               voteOnPoll(pollId, {
                 selectedDates: pollSelDates,
@@ -1316,7 +1323,7 @@ function WeekendPollPanel({
   getUserById: (id: string) => User | undefined;
   formatDate: (iso: string) => string;
   availability: BuddyAvailability[];
-  onCreatePoll: (dates?: string[], times?: string[]) => void;
+  onCreatePoll: (dates?: string[], times?: string[], message?: string) => void;
   onVote: (pollId: string) => void;
   onGroupChat: (memberIds: string[], dateStr?: string, timeStr?: string) => void;
   onGroupCall: (memberIds: string[]) => void;
@@ -1329,6 +1336,7 @@ function WeekendPollPanel({
   const [showNewPoll, setShowNewPoll] = useState(false);
   const [newPollDates, setNewPollDates] = useState<string[]>([]);
   const [newPollTimes, setNewPollTimes] = useState<string[]>([]);
+  const [newPollMessage, setNewPollMessage] = useState('');
 
   const formatTimeRaw = (raw: string) => {
     const [h, m] = raw.split(':').map(Number);
@@ -1338,7 +1346,7 @@ function WeekendPollPanel({
   };
 
   return (
-    <div className="px-4 py-3 bg-white border-b border-gray-100 max-h-[50vh] overflow-y-auto animate-fade-in">
+    <div className="px-4 py-3 bg-white border-b border-gray-100 max-h-[50vh] overflow-y-auto animate-fade-in shrink-0">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
           <BarChart3 size={15} className="text-green-700" /> Weekend Polls
@@ -1443,9 +1451,21 @@ function WeekendPollPanel({
             ))}
           </div>
 
+          {/* Optional Message */}
+          <div className="mb-3">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Message (optional)</p>
+            <textarea
+              value={newPollMessage}
+              onChange={(e) => setNewPollMessage(e.target.value)}
+              placeholder="e.g. Who's up for 18 holes this weekend?"
+              rows={2}
+              className="w-full px-3 py-2 rounded-lg border border-amber-200 bg-white text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+            />
+          </div>
+
           <div className="flex gap-2">
             <button
-              onClick={() => { setShowNewPoll(false); setNewPollDates([]); setNewPollTimes([]); }}
+              onClick={() => { setShowNewPoll(false); setNewPollDates([]); setNewPollTimes([]); setNewPollMessage(''); }}
               className="flex-1 py-2 rounded-xl border border-gray-200 text-gray-600 text-xs font-semibold hover:bg-gray-50 transition-colors"
             >
               Cancel
@@ -1455,8 +1475,9 @@ function WeekendPollPanel({
                 onCreatePoll(
                   newPollDates.length > 0 ? newPollDates : undefined,
                   newPollTimes.length > 0 ? newPollTimes : undefined,
+                  newPollMessage.trim() || undefined,
                 );
-                setShowNewPoll(false); setNewPollDates([]); setNewPollTimes([]);
+                setShowNewPoll(false); setNewPollDates([]); setNewPollTimes([]); setNewPollMessage('');
               }}
               className="flex-1 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors"
             >
@@ -1626,7 +1647,7 @@ function GroupAvailabilityViewer({
     });
 
   return (
-    <div className="px-4 py-3 bg-white border-b border-gray-100 max-h-[50vh] overflow-y-auto animate-fade-in">
+    <div className="px-4 py-3 bg-white border-b border-gray-100 max-h-[50vh] overflow-y-auto animate-fade-in shrink-0">
       <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-1.5">
         <Eye size={15} className="text-green-700" /> Who's Free for Tee Time?
       </h4>
