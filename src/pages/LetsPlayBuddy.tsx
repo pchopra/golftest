@@ -98,25 +98,26 @@ export default function LetsPlayBuddy() {
     [currentUser.lat, currentUser.lng]
   );
 
-  // Default: courses within 25 miles of user profile location
-  const nearbyCourses = useMemo(() =>
-    allCoursesWithDistance.filter(c => c.distance <= 25),
+  // Default: nearest 5 courses within 25 miles of user profile location (auto-populated)
+  const nearest5 = useMemo(() =>
+    allCoursesWithDistance.filter(c => c.distance <= 25).slice(0, 5),
     [allCoursesWithDistance]
   );
 
   // Filtered course list based on search query (name or zip)
   const filteredCourseList = useMemo(() => {
     const q = courseSearchActive.trim().toLowerCase();
-    if (!q) return nearbyCourses;
+    if (!q) return nearest5;
 
-    // Zip code search
+    // Zip code search — show nearest 5 within 25mi of that zip
     if (/^\d{5}$/.test(q)) {
       const coords = getCoordinatesForZip(q);
       if (coords) {
         return mockCourses
           .map(c => ({ ...c, distance: getDistanceMiles(coords.lat, coords.lng, c.lat, c.lng) }))
           .filter(c => c.distance <= 25)
-          .sort((a, b) => a.distance - b.distance);
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, 5);
       }
       return [];
     }
@@ -125,7 +126,7 @@ export default function LetsPlayBuddy() {
     return allCoursesWithDistance.filter(c =>
       c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q)
     );
-  }, [courseSearchActive, nearbyCourses, allCoursesWithDistance]);
+  }, [courseSearchActive, nearest5, allCoursesWithDistance]);
 
   const courseSearchIsName = courseSearchActive.trim().length > 0 && !/^\d{5}$/.test(courseSearchActive.trim());
   const courseGoogleUrl = courseSearchActive.trim()
@@ -321,9 +322,12 @@ export default function LetsPlayBuddy() {
 
           {/* Preferred Course */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
               <Star size={14} className="inline mr-1 -mt-0.5" /> Preferred Course
             </label>
+            {!courseSearchActive && (
+              <p className="text-xs text-gray-500 mb-2">Nearest {nearest5.length} course{nearest5.length !== 1 ? 's' : ''} to your profile location</p>
+            )}
             {/* Course search input */}
             <div className="flex gap-2 mb-2">
               <div className="flex-1 relative">

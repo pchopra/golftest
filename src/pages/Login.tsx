@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, UserPlus, Loader2 } from 'lucide-react';
+import { getCoordinatesForZip } from '../data/zipCoordinates';
 import type { SkillLevel, Gender } from '../data/mockUsers';
 
 type Tab = 'login' | 'register';
@@ -119,6 +120,10 @@ export default function Login() {
     const fullAddress = [street.trim(), city.trim(), `${state.trim()} ${zip.trim()}`.trim()]
       .filter(Boolean)
       .join(', ');
+    // Derive coordinates from zip code; fall back to SF default
+    const zipCoords = zip.trim() ? getCoordinatesForZip(zip.trim()) : null;
+    const userLat = zipCoords?.lat ?? 37.7749;
+    const userLng = zipCoords?.lng ?? -122.4194;
     setSupaLoading(true);
     const { error: err } = await registerWithSupabase(email.trim(), password, {
       firstName: firstName.trim(),
@@ -127,8 +132,8 @@ export default function Login() {
       skillLevel,
       gender,
       address: fullAddress,
-      lat: 37.7749 + (Math.random() - 0.5) * 0.2,
-      lng: -122.4194 + (Math.random() - 0.5) * 0.2,
+      lat: userLat,
+      lng: userLng,
     });
     setSupaLoading(false);
     if (err) {
