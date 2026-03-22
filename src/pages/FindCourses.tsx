@@ -312,36 +312,56 @@ export default function FindCourses() {
               />
             ))}
             {nameFilter && (
-              <div className="mx-4 mt-3 mb-2">
-                <a
-                  href={googleSearchUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-2.5 text-sm font-medium text-golf-700 bg-golf-50 border border-golf-200 rounded-xl hover:bg-golf-100 transition-colors"
-                >
-                  <ExternalLink size={14} />
-                  Search Google for more results
-                </a>
+              <div className="mx-4 mb-3 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-4 flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-golf-600 to-emerald-500 flex items-center justify-center shrink-0">
+                    <Search size={20} className="text-white/70" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-gray-800">Find more courses on Google</p>
+                    <p className="text-xs text-gray-500 mt-0.5">See additional results for &quot;{nameFilter}&quot;</p>
+                  </div>
+                  <a
+                    href={googleSearchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 bg-golf-700 text-white text-xs font-semibold rounded-xl hover:bg-golf-800 transition-colors"
+                  >
+                    <ExternalLink size={12} />
+                    Google
+                  </a>
+                </div>
               </div>
             )}
           </>
         ) : showGoogleFallback ? (
-          <div className="mx-4 mt-2 mb-4 p-5 rounded-2xl bg-gray-50 border border-gray-200 text-center">
-            <p className="text-sm font-semibold text-gray-800">
-              &quot;{nameFilter}&quot; not found in our courses
-            </p>
-            <p className="text-xs text-gray-500 mt-1 mb-3">
-              Try searching on Google for tee times and course info
-            </p>
-            <a
-              href={googleSearchUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-golf-700 text-white text-sm font-semibold rounded-xl hover:bg-golf-800 transition-colors"
-            >
-              <ExternalLink size={14} />
-              Search on Google
-            </a>
+          <div className="mx-4 mb-3 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* Gradient header matching CourseCard style */}
+            <div className="h-28 bg-gradient-to-br from-golf-600 to-emerald-500 relative flex items-center justify-center">
+              <Search size={40} className="text-white/30" />
+              <div className="absolute top-3 left-3 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                Web Result
+              </div>
+            </div>
+            <div className="p-4">
+              <h3 className="font-bold text-gray-900 text-base leading-tight capitalize">{nameFilter}</h3>
+              <p className="text-sm text-gray-500 mt-0.5">Not in our database — view on Google for details</p>
+
+              <div className="flex items-center gap-2 mt-3 text-xs text-gray-400">
+                <ExternalLink size={12} />
+                <span>Tee times, reviews &amp; directions available via Google</span>
+              </div>
+
+              <a
+                href={googleSearchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full mt-3 py-2.5 bg-golf-700 text-white text-sm font-semibold rounded-xl hover:bg-golf-800 transition-colors"
+              >
+                <ExternalLink size={14} />
+                Search on Google
+              </a>
+            </div>
           </div>
         ) : (effectiveLat && effectiveLng) && radiusFilter && nearestFallback.length > 0 ? (
           <>
