@@ -146,6 +146,10 @@ begin
     coalesce((new.raw_user_meta_data->>'lng')::double precision, -122.4194)
   );
   return new;
+exception when others then
+  -- Log but don't block signup; client-side fallback will create the profile
+  raise log 'handle_new_user failed for %: % %', new.id, SQLERRM, SQLSTATE;
+  return new;
 end;
 $$ language plpgsql security definer;
 

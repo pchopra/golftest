@@ -83,21 +83,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return stored ? JSON.parse(stored) : mockWeekendPolls;
   });
 
-  // Load Supabase profile for authenticated user
+  // Load Supabase profile for authenticated user (creates profile if missing)
   const loadSupabaseProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
+
     if (data) {
       const user = profileToUser(data);
       setCurrentUser(user);
-      // Merge into allUsers if not present
       setAllUsers(prev => {
         const exists = prev.some(u => u.id === user.id);
         return exists ? prev.map(u => u.id === user.id ? user : u) : [...prev, user];
       });
+      return;
+    }
+
+    // Profile missing (trigger may have failed) — create it from auth metadata
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+
+    const meta = authUser.user_metadata || {};
+    const profileRow = {
+      id: userId,
+      first_name: meta.first_name || '',
+      last_name: meta.last_name || '',
+      email: authUser.email || '',
+      phone: meta.phone || '',
+      skill_level: meta.skill_level || 'Beginner',
+      gender: meta.gender || 'Prefer not to say',
+      address: meta.address || '',
+      lat: meta.lat ?? 37.7749,
+      lng: meta.lng ?? -122.4194,
+    };
+
+    const { data: inserted, error: insertErr } = await supabase
+      .from('profiles')
+      .upsert(profileRow, { onConflict: 'id' })
+      .select()
+      .single();
+
+    if (insertErr) {
+      console.error('[GolfBuddy] Failed to create profile fallback:', insertErr.message);
+      // Still set a user from metadata so the app is usable
+      const fallbackUser: User = {
+        id: userId,
+        firstName: meta.first_name || '',
+        lastName: meta.last_name || '',
+        email: authUser.email || '',
+        phone: meta.phone || '',
+        skillLevel: meta.skill_level || 'Beginner',
+        gender: meta.gender || 'Prefer not to say',
+        address: meta.address || '',
+        lat: meta.lat ?? 37.7749,
+        lng: meta.lng ?? -122.4194,
+        createdAt: new Date().toISOString().split('T')[0],
+      };
+      setCurrentUser(fallbackUser);
+      setAllUsers(prev => [...prev, fallbackUser]);
+      return;
+    }
+
+    if (inserted) {
+      const user = profileToUser(inserted);
+      setCurrentUser(user);
+      setAllUsers(prev => [...prev, user]);
     }
   }, []);
 
