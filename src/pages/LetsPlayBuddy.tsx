@@ -870,7 +870,7 @@ export default function LetsPlayBuddy() {
             getUserById={getUserById}
             formatDate={formatDate}
             availability={availability}
-            onCreatePoll={() => createWeekendPoll(group.id)}
+            onCreatePoll={(dates, times) => createWeekendPoll(group.id, dates, times)}
             onVote={(pollId) => {
               voteOnPoll(pollId, {
                 selectedDates: pollSelDates,
@@ -1316,7 +1316,7 @@ function WeekendPollPanel({
   getUserById: (id: string) => User | undefined;
   formatDate: (iso: string) => string;
   availability: BuddyAvailability[];
-  onCreatePoll: () => void;
+  onCreatePoll: (dates?: string[], times?: string[]) => void;
   onVote: (pollId: string) => void;
   onGroupChat: (memberIds: string[], dateStr?: string, timeStr?: string) => void;
   onGroupCall: (memberIds: string[]) => void;
@@ -1326,6 +1326,16 @@ function WeekendPollPanel({
   pollCanOffer: boolean; setPollCanOffer: (v: boolean) => void;
 }) {
   const openPolls = polls.filter(p => p.status === 'open');
+  const [showNewPoll, setShowNewPoll] = useState(false);
+  const [newPollDates, setNewPollDates] = useState<string[]>([]);
+  const [newPollTimes, setNewPollTimes] = useState<string[]>([]);
+
+  const formatTimeRaw = (raw: string) => {
+    const [h, m] = raw.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+  };
 
   return (
     <div className="px-4 py-3 bg-white border-b border-gray-100 max-h-[50vh] overflow-y-auto animate-fade-in">
@@ -1334,14 +1344,129 @@ function WeekendPollPanel({
           <BarChart3 size={15} className="text-green-700" /> Weekend Polls
         </h4>
         <button
-          onClick={onCreatePoll}
+          onClick={() => setShowNewPoll(!showNewPoll)}
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 transition-colors"
         >
           <Plus size={13} /> New Poll
         </button>
       </div>
 
-      {openPolls.length === 0 ? (
+      {/* New Poll Creation Form */}
+      {showNewPoll && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 mb-3 animate-fade-in">
+          <p className="text-xs font-bold text-amber-800 mb-2">Create New Poll</p>
+
+          {/* Poll Dates */}
+          <div className="flex items-center gap-1.5 mb-1">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase">Dates</p>
+            <div className="ml-auto relative">
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.getElementById('new-poll-date-picker') as HTMLInputElement;
+                  if (input) { input.focus(); input.showPicker(); }
+                }}
+                className="p-1 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+                title="Add a date"
+              >
+                <Plus size={12} />
+              </button>
+              <input
+                id="new-poll-date-picker"
+                type="date"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => {
+                  const date = e.target.value;
+                  if (date && !newPollDates.includes(date)) {
+                    setNewPollDates(prev => [...prev, date].sort());
+                  }
+                  e.target.value = '';
+                }}
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {newPollDates.length === 0 && <p className="text-[10px] text-gray-400 italic">Tap + to add dates (defaults to this weekend)</p>}
+            {newPollDates.map(date => (
+              <button
+                key={date}
+                onClick={() => setNewPollDates(prev => prev.filter(d => d !== date))}
+                className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-amber-600 text-white flex items-center gap-1"
+              >
+                {formatDate(date)} <X size={10} />
+              </button>
+            ))}
+          </div>
+
+          {/* Poll Times */}
+          <div className="flex items-center gap-1.5 mb-1">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase">Times</p>
+            <div className="ml-auto relative">
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.getElementById('new-poll-time-picker') as HTMLInputElement;
+                  if (input) { input.focus(); input.showPicker(); }
+                }}
+                className="p-1 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+                title="Add a time"
+              >
+                <Plus size={12} />
+              </button>
+              <input
+                id="new-poll-time-picker"
+                type="time"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (!raw) return;
+                  const formatted = formatTimeRaw(raw);
+                  if (!newPollTimes.includes(formatted)) {
+                    setNewPollTimes(prev => [...prev, formatted]);
+                  }
+                  e.target.value = '';
+                }}
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {newPollTimes.length === 0 && <p className="text-[10px] text-gray-400 italic">Tap + to add times (defaults to common tee times)</p>}
+            {newPollTimes.map(time => (
+              <button
+                key={time}
+                onClick={() => setNewPollTimes(prev => prev.filter(t => t !== time))}
+                className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-amber-600 text-white flex items-center gap-1"
+              >
+                {time} <X size={10} />
+              </button>
+            ))}
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setShowNewPoll(false); setNewPollDates([]); setNewPollTimes([]); }}
+              className="flex-1 py-2 rounded-xl border border-gray-200 text-gray-600 text-xs font-semibold hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                onCreatePoll(
+                  newPollDates.length > 0 ? newPollDates : undefined,
+                  newPollTimes.length > 0 ? newPollTimes : undefined,
+                );
+                setShowNewPoll(false); setNewPollDates([]); setNewPollTimes([]);
+              }}
+              className="flex-1 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors"
+            >
+              Create Poll
+            </button>
+          </div>
+        </div>
+      )}
+
+      {openPolls.length === 0 && !showNewPoll ? (
         <p className="text-xs text-gray-400 text-center py-4">No polls yet. Create one to plan your weekend round!</p>
       ) : (
         <div className="space-y-4">

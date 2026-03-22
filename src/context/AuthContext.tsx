@@ -28,7 +28,7 @@ interface AuthContextType {
   makeGroupAdmin: (groupId: string, userId: string) => void;
   leaveGroup: (groupId: string) => void;
   sendMessage: (groupId: string, text: string) => void;
-  createWeekendPoll: (groupId: string) => WeekendPoll;
+  createWeekendPoll: (groupId: string, customDates?: string[], customTimes?: string[]) => WeekendPoll;
   voteOnPoll: (pollId: string, vote: Omit<PollVote, 'userId'>) => void;
   updateProfilePicture: (dataUrl: string) => void;
 }
@@ -459,7 +459,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const createWeekendPoll = (groupId: string): WeekendPoll => {
+  const createWeekendPoll = (groupId: string, customDates?: string[], customTimes?: string[]): WeekendPoll => {
     const today = new Date();
     const dayOfWeek = today.getDay();
     const daysUntilSat = (6 - dayOfWeek + 7) % 7 || 7;
@@ -470,14 +470,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const satStr = sat.toISOString().split('T')[0];
     const sunStr = sun.toISOString().split('T')[0];
 
+    const dateOptions = customDates && customDates.length > 0 ? [...customDates].sort() : [satStr, sunStr];
+    const timeOptions = customTimes && customTimes.length > 0 ? customTimes : ['7:00 AM', '9:30 AM', '11:00 AM', '2:00 PM'];
+
     const poll: WeekendPoll = {
       id: `poll-${Date.now()}`,
       groupId,
       createdBy: currentUser?.id || '',
       createdAt: new Date().toISOString(),
-      weekendDate: satStr,
-      dateOptions: [satStr, sunStr],
-      timeOptions: ['7:00 AM', '9:30 AM', '11:00 AM', '2:00 PM'],
+      weekendDate: dateOptions[0] || satStr,
+      dateOptions,
+      timeOptions,
       votes: [],
       status: 'open',
     };
