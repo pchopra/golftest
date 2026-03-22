@@ -90,16 +90,27 @@ export default function LetsPlayBuddy() {
   }
 
   const timeSlots = ['7:00 AM', '9:30 AM', '11:00 AM', '2:00 PM', '3:00 PM'];
+
+  // Derive effective lat/lng from user's address zip code (if present), else profile lat/lng
+  const userCoords = useMemo(() => {
+    const zipMatch = currentUser.address.match(/\b(\d{5})\b/);
+    if (zipMatch) {
+      const coords = getCoordinatesForZip(zipMatch[1]);
+      if (coords) return { lat: coords.lat, lng: coords.lng, zip: zipMatch[1] };
+    }
+    return { lat: currentUser.lat, lng: currentUser.lng, zip: '' };
+  }, [currentUser.address, currentUser.lat, currentUser.lng]);
+
   const allCoursesWithDistance = useMemo(() =>
     mockCourses
-      .map(c => ({ ...c, distance: getDistanceMiles(currentUser.lat, currentUser.lng, c.lat, c.lng) }))
+      .map(c => ({ ...c, distance: getDistanceMiles(userCoords.lat, userCoords.lng, c.lat, c.lng) }))
       .sort((a, b) => a.distance - b.distance),
-    [currentUser.lat, currentUser.lng]
+    [userCoords.lat, userCoords.lng]
   );
 
-  // Default: nearest 5 courses within 25 miles of user profile location (auto-populated)
+  // Default: nearest 5 courses (auto-populated from profile location)
   const nearest5 = useMemo(() =>
-    allCoursesWithDistance.filter(c => c.distance <= 25).slice(0, 5),
+    allCoursesWithDistance.slice(0, 5),
     [allCoursesWithDistance]
   );
 
@@ -326,7 +337,7 @@ export default function LetsPlayBuddy() {
               <Star size={14} className="inline mr-1 -mt-0.5" /> Preferred Course
             </label>
             {!courseSearchActive && (
-              <p className="text-xs text-gray-500 mb-2">Nearest {nearest5.length} course{nearest5.length !== 1 ? 's' : ''} to your profile location</p>
+              <p className="text-xs text-gray-500 mb-2">Nearest {nearest5.length} course{nearest5.length !== 1 ? 's' : ''}{userCoords.zip ? ` near ${userCoords.zip}` : ' to your location'}</p>
             )}
             {/* Course search input */}
             <div className="flex gap-2 mb-2">
