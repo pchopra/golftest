@@ -11,7 +11,7 @@ import LocationPrompt from '../components/LocationPrompt';
 import HotDealCard from '../components/HotDealCard';
 
 type SortMode = 'nearest' | 'top-rated' | 'best-value';
-type RadiusFilter = 5 | 10 | null;
+type RadiusFilter = 10 | 25 | 50 | null;
 
 export default function FindCourses() {
   const { latitude, longitude, loading, error, granted, requestLocation } = useGeolocation();
@@ -20,7 +20,7 @@ export default function FindCourses() {
   const [zipCode, setZipCode] = useState('');
   const [zipCoords, setZipCoords] = useState<{ lat: number; lng: number; city: string } | null>(null);
   const [zipError, setZipError] = useState('');
-  const [radiusFilter, setRadiusFilter] = useState<RadiusFilter>(10);
+  const [radiusFilter, setRadiusFilter] = useState<RadiusFilter>(25);
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
     return d.toISOString().split('T')[0];
@@ -165,7 +165,7 @@ export default function FindCourses() {
         {(zipCoords || (granted && latitude)) && (
           <div className="mt-3 flex items-center gap-2">
             <span className="text-xs text-golf-200 font-medium">Radius:</span>
-            {([5, 10] as const).map((r) => (
+            {([10, 25, 50] as const).map((r) => (
               <button
                 key={r}
                 onClick={() => setRadiusFilter(r)}
