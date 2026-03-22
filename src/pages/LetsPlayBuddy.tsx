@@ -37,6 +37,7 @@ export default function LetsPlayBuddy() {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
   const [deleteRevealedGroupId, setDeleteRevealedGroupId] = useState<string | null>(null);
+  const [groupCallMembers, setGroupCallMembers] = useState<User[]>([]);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartX = useRef(0);
 
@@ -257,13 +258,14 @@ export default function LetsPlayBuddy() {
   };
 
   const handleGroupCall = (memberIds: string[]) => {
-    // Build a conference-style call with the first member's phone number
     const members = memberIds
       .filter(id => id !== currentUser.id)
       .map(id => getUserById(id))
-      .filter(Boolean);
-    if (members.length > 0 && members[0]?.phone) {
+      .filter((u): u is User => !!u && !!u.phone);
+    if (members.length === 1) {
       window.location.href = `tel:${members[0].phone}`;
+    } else if (members.length > 1) {
+      setGroupCallMembers(members);
     }
   };
 
@@ -1287,6 +1289,37 @@ function AvailabilityResults({
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Group Call Sheet */}
+      {groupCallMembers.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setGroupCallMembers([])}>
+          <div className="w-full max-w-md bg-white rounded-t-2xl shadow-2xl animate-slide-up" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 pt-4 pb-2">
+              <h3 className="text-base font-bold text-gray-900">Group Call</h3>
+              <button onClick={() => setGroupCallMembers([])} className="p-1 rounded-full hover:bg-gray-100">
+                <X size={18} className="text-gray-500" />
+              </button>
+            </div>
+            <p className="px-5 text-xs text-gray-500 mb-3">Tap a member to call them</p>
+            <div className="px-5 pb-5 space-y-2 max-h-72 overflow-y-auto">
+              {groupCallMembers.map(member => (
+                <a
+                  key={member.id}
+                  href={`tel:${member.phone}`}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                >
+                  <Avatar firstName={member.firstName} lastName={member.lastName} profilePicture={member.profilePicture} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">{member.firstName} {member.lastName}</p>
+                    <p className="text-xs text-gray-500">{member.phone}</p>
+                  </div>
+                  <Phone size={18} className="text-blue-600" />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       )}
