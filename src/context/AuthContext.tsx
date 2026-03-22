@@ -22,6 +22,11 @@ interface AuthContextType {
   getMyAvailability: () => BuddyAvailability | undefined;
   toggleFreeNow: (until: string) => void;
   createChatGroup: (name: string, memberIds: string[], teeDate?: string, teeTime?: string) => ChatGroup;
+  deleteGroup: (groupId: string) => void;
+  addGroupMember: (groupId: string, userId: string) => void;
+  removeGroupMember: (groupId: string, userId: string) => void;
+  makeGroupAdmin: (groupId: string, userId: string) => void;
+  leaveGroup: (groupId: string) => void;
   sendMessage: (groupId: string, text: string) => void;
   createWeekendPoll: (groupId: string) => WeekendPoll;
   voteOnPoll: (pollId: string, vote: Omit<PollVote, 'userId'>) => void;
@@ -318,11 +323,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const createChatGroup = (name: string, memberIds: string[], teeDate?: string, teeTime?: string): ChatGroup => {
+    const creatorId = currentUser?.id || '';
     const group: ChatGroup = {
       id: `group-${Date.now()}`,
       name,
-      memberIds: currentUser ? [currentUser.id, ...memberIds] : memberIds,
-      createdBy: currentUser?.id || '',
+      memberIds: currentUser ? [...new Set([currentUser.id, ...memberIds])] : memberIds,
+      adminIds: creatorId ? [creatorId] : [],
+      createdBy: creatorId,
       createdAt: new Date().toISOString(),
       messages: [],
       ...(teeDate && { teeDate }),
@@ -330,6 +337,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     setChatGroups(prev => [...prev, group]);
     return group;
+  };
+
+  const deleteGroup = (groupId: string) => {
+    if (!currentUser) return;
+    setChatGroups(prev => {
+      const group = prev.find(g => g.id === groupId);
+      if (!group) return prev;
+      const isAdmin = (group.adminIds || []).includes(currentUser.id);
+      if (!isAdmin) return prev;
+      return prev.filter(g => g.id !== groupId);
+    });
+    setWeekendPolls(prev => prev.filter(p => p.groupId !== groupId));
+  };
+
+  const addGroupMember = (groupId: string, userId: string) => {
+    if (!currentUser) return;
+    setChatGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      if (!(g.adminIds || []).includes(currentUser.id)) return g;
+      if (g.memberIds.includes(userId)) return g;
+      return { ...g, memberIds: [...g.memberIds, userId] };
+    }));
+  };
+
+  const removeGroupMember = (groupId: string, userId: string) => {
+    if (!currentUser) return;
+    setChatGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      if (!(g.adminIds || []).includes(currentUser.id)) return g;
+      return {
+        ...g,
+        memberIds: g.memberIds.filter(id => id !== userId),
+        adminIds: (g.adminIds || []).filter(id => id !== userId),
+      };
+    }));
+  };
+
+  const makeGroupAdmin = (groupId: string, userId: string) => {
+    if (!currentUser) return;
+    setChatGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      if (!(g.adminIds || []).includes(currentUser.id)) return g;
+      if ((g.adminIds || []).includes(userId)) return g;
+      return { ...g, adminIds: [...(g.adminIds || []), userId] };
+    }));
+  };
+
+  const leaveGroup = (groupId: string) => {
+    if (!currentUser) return;
+    setChatGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      const newMembers = g.memberIds.filter(id => id !== currentUser.id);
+      const newAdmins = (g.adminIds || []).filter(id => id !== currentUser.id);
+      // If no members left, remove the group
+      if (newMembers.length === 0) return { ...g, memberIds: [] };
+      // If leaving admin left no admins, promote the first member
+      const finalAdmins = newAdmins.length === 0 ? [newMembers[0]] : newAdmins;
+      return { ...g, memberIds: newMembers, adminIds: finalAdmins };
+    }).filter(g => g.memberIds.length > 0));
   };
 
   const toggleFreeNow = (until: string) => {
@@ -423,7 +489,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login, loginWithSupabase, registerWithSupabase,
       register, logout,
       setMyAvailability, getMyAvailability, toggleFreeNow,
-      createChatGroup, sendMessage,
+      createChatGroup, deleteGroup, addGroupMember, removeGroupMember, makeGroupAdmin, leaveGroup, sendMessage,
       createWeekendPoll, voteOnPoll,
     }}>
       {children}

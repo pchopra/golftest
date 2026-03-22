@@ -52,6 +52,7 @@ export interface ChatGroup {
   id: string;
   name: string;
   memberIds: string[];
+  adminIds: string[];
   createdBy: string;
   createdAt: string;
   messages: ChatMessage[];
@@ -312,6 +313,7 @@ export const mockChatGroups: ChatGroup[] = [
     id: 'group-1',
     name: 'Weekend Warriors',
     memberIds: ['user-1', 'user-2', 'user-5'],
+    adminIds: ['user-1'],
     createdBy: 'user-1',
     createdAt: '2026-03-15T10:00:00Z',
     messages: [
@@ -324,6 +326,7 @@ export const mockChatGroups: ChatGroup[] = [
     id: 'group-2',
     name: 'Beginner Buddies',
     memberIds: ['user-3', 'user-7', 'user-4'],
+    adminIds: ['user-3'],
     createdBy: 'user-3',
     createdAt: '2026-03-16T14:00:00Z',
     messages: [

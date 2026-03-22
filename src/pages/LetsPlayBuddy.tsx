@@ -9,13 +9,14 @@ import {
   Calendar, Clock, MapPin, Users, MessageCircle, Send,
   ChevronRight, Plus, Check, Star, DollarSign, ArrowLeft,
   UserCheck, Users2, Filter, Flame, BarChart3, Car, Eye, Phone,
+  Settings, Trash2, LogOut, Shield, UserPlus, UserMinus, X,
 } from 'lucide-react';
 
 type MainTab = 'buddies' | 'chat';
 type AvailFilter = 'all' | 'two' | 'four' | 'moreThanTwo';
 
 export default function LetsPlayBuddy() {
-  const { currentUser, allUsers, availability, chatGroups, weekendPolls, setMyAvailability, getMyAvailability, createChatGroup, sendMessage, createWeekendPoll, voteOnPoll } = useAuth();
+  const { currentUser, allUsers, availability, chatGroups, weekendPolls, setMyAvailability, getMyAvailability, createChatGroup, deleteGroup, addGroupMember, removeGroupMember, makeGroupAdmin, leaveGroup, sendMessage, createWeekendPoll, voteOnPoll } = useAuth();
   const navigate = useNavigate();
 
   const [mainTab, setMainTab] = useState<MainTab>('buddies');
@@ -30,6 +31,8 @@ export default function LetsPlayBuddy() {
   const [showAvailViewer, setShowAvailViewer] = useState(false);
   const [viewDate, setViewDate] = useState('');
   const [viewTime, setViewTime] = useState('');
+  const [showGroupSettings, setShowGroupSettings] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
 
   // Poll voting state
   const [pollSelDates, setPollSelDates] = useState<string[]>([]);
@@ -419,7 +422,7 @@ export default function LetsPlayBuddy() {
         {/* Chat Header */}
         <div className="px-4 pt-4 pb-2 bg-white border-b border-gray-100">
           <div className="flex items-center gap-3 mb-2">
-            <button onClick={() => { setActiveGroupId(null); setShowGroupAvailability(false); }} className="text-golf-700">
+            <button onClick={() => { setActiveGroupId(null); setShowGroupAvailability(false); setShowGroupSettings(false); setShowAddMember(false); }} className="text-golf-700">
               <ArrowLeft size={20} />
             </button>
             <div className="flex-1">
@@ -448,6 +451,12 @@ export default function LetsPlayBuddy() {
             >
               <Filter size={18} />
             </button>
+            <button
+              onClick={() => setShowGroupSettings(!showGroupSettings)}
+              className={`p-2 rounded-xl border transition-all ${showGroupSettings ? 'border-golf-600 bg-golf-50 text-golf-700' : 'border-gray-200 text-gray-500'}`}
+            >
+              <Settings size={18} />
+            </button>
           </div>
 
           {/* Group Availability Filter */}
@@ -470,6 +479,118 @@ export default function LetsPlayBuddy() {
             </div>
           )}
         </div>
+
+        {/* Group Settings Panel */}
+        {showGroupSettings && (
+          <div className="px-4 py-3 bg-white border-b border-gray-100 animate-fade-in">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-bold text-gray-900">Group Settings</h4>
+              <button onClick={() => { setShowGroupSettings(false); setShowAddMember(false); }} className="text-gray-400"><X size={16} /></button>
+            </div>
+
+            {/* Members List */}
+            <div className="space-y-2 mb-3">
+              {group.memberIds.map(memberId => {
+                const member = getUserById(memberId);
+                if (!member) return null;
+                const isAdmin = (group.adminIds || []).includes(memberId);
+                const currentIsAdmin = (group.adminIds || []).includes(currentUser.id);
+                const isMe = memberId === currentUser.id;
+                return (
+                  <div key={memberId} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-gray-50">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-golf-400 to-golf-700 flex items-center justify-center text-white text-[10px] font-bold">
+                        {member.firstName[0]}{member.lastName[0]}
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-gray-900">{member.firstName} {member.lastName}{isMe ? ' (You)' : ''}</p>
+                        {isAdmin && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 py-0.5">
+                            <Shield size={8} /> Admin
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {currentIsAdmin && !isMe && (
+                      <div className="flex items-center gap-1">
+                        {!isAdmin && (
+                          <button
+                            onClick={() => makeGroupAdmin(group.id, memberId)}
+                            className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors"
+                            title="Make admin"
+                          >
+                            <Shield size={14} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => removeGroupMember(group.id, memberId)}
+                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                          title="Remove member"
+                        >
+                          <UserMinus size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Add Member (admin only) */}
+            {(group.adminIds || []).includes(currentUser.id) && (
+              <>
+                <button
+                  onClick={() => setShowAddMember(!showAddMember)}
+                  className="w-full mb-2 py-2 rounded-xl border border-dashed border-golf-300 text-golf-700 text-xs font-semibold hover:bg-golf-50 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <UserPlus size={14} /> Add Member
+                </button>
+                {showAddMember && (
+                  <div className="max-h-32 overflow-y-auto space-y-1 mb-3">
+                    {otherUsers.filter(u => !group.memberIds.includes(u.id)).map(user => (
+                      <button
+                        key={user.id}
+                        onClick={() => { addGroupMember(group.id, user.id); setShowAddMember(false); }}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-golf-50 transition-colors"
+                      >
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-golf-400 to-golf-700 flex items-center justify-center text-white text-[9px] font-bold">
+                          {user.firstName[0]}{user.lastName[0]}
+                        </div>
+                        <span className="text-xs font-medium text-gray-700">{user.firstName} {user.lastName}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 mt-2">
+              {(group.adminIds || []).includes(currentUser.id) && (
+                <button
+                  onClick={() => {
+                    deleteGroup(group.id);
+                    setActiveGroupId(null);
+                    setShowGroupSettings(false);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold hover:bg-red-100 transition-colors"
+                >
+                  <Trash2 size={14} /> Delete Group
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  leaveGroup(group.id);
+                  setActiveGroupId(null);
+                  setShowGroupSettings(false);
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-100 transition-colors"
+              >
+                <LogOut size={14} /> Leave Group
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons: Poll, Ride-sharing, Availability */}
         <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex gap-2">
