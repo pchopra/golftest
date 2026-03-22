@@ -716,7 +716,8 @@ export default function LetsPlayBuddy() {
                   nearbyDeals={nearbyDeals}
                   formatDate={formatDate}
                   getCourseName={getCourseName}
-
+                  groupCallMembers={groupCallMembers}
+                  setGroupCallMembers={setGroupCallMembers}
                 />
               ) : (
                 <p className="text-xs text-gray-400 text-center py-2">No matching availability for this filter.</p>
@@ -1053,6 +1054,8 @@ export default function LetsPlayBuddy() {
               getCourseName={getCourseName}
               favoriteBuddyIds={favoriteBuddyIds}
               onToggleFavorite={toggleFavorite}
+              groupCallMembers={groupCallMembers}
+              setGroupCallMembers={setGroupCallMembers}
             />
           ) : (
             <div className="text-center py-8">
@@ -1193,6 +1196,8 @@ function AvailabilityResults({
   getCourseName,
   favoriteBuddyIds = [],
   onToggleFavorite,
+  groupCallMembers = [],
+  setGroupCallMembers,
 }: {
   buddies: { user: User; avail: BuddyAvailability | undefined; distance: number }[];
   commonDates: string[];
@@ -1202,6 +1207,8 @@ function AvailabilityResults({
   getCourseName: (id: string) => string;
   favoriteBuddyIds?: string[];
   onToggleFavorite?: (userId: string) => void;
+  groupCallMembers?: User[];
+  setGroupCallMembers?: (members: User[]) => void;
 }) {
   return (
     <div className="space-y-4 animate-fade-in">
@@ -1307,11 +1314,11 @@ function AvailabilityResults({
 
       {/* Group Call Sheet */}
       {groupCallMembers.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setGroupCallMembers([])}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setGroupCallMembers?.([])}>
           <div className="w-full max-w-md bg-white rounded-t-2xl shadow-2xl animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 pt-4 pb-2">
               <h3 className="text-base font-bold text-gray-900">Group Call</h3>
-              <button onClick={() => setGroupCallMembers([])} className="p-1 rounded-full hover:bg-gray-100">
+              <button onClick={() => setGroupCallMembers?.([])} className="p-1 rounded-full hover:bg-gray-100">
                 <X size={18} className="text-gray-500" />
               </button>
             </div>
