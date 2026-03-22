@@ -323,21 +323,17 @@ export default function LetsPlayBuddy() {
             <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
               <Calendar size={14} className="-mt-0.5" /> Available Dates
               <span className="text-xs font-normal text-gray-400 ml-1">({selDates.length}/5 selected)</span>
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.getElementById('buddy-date-picker') as HTMLInputElement;
-                  if (input) { input.showPicker(); }
-                }}
-                className="ml-auto p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors"
+              <label
+                htmlFor="buddy-date-picker"
+                className="ml-auto p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors cursor-pointer"
                 title="Pick a date from calendar"
               >
                 <Plus size={14} />
-              </button>
+              </label>
               <input
                 id="buddy-date-picker"
                 type="date"
-                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+                style={{ position: 'fixed', top: '-200px', left: '-200px', opacity: 0 }}
                 tabIndex={-1}
                 min={new Date().toISOString().split('T')[0]}
                 onChange={(e) => {
@@ -394,21 +390,17 @@ export default function LetsPlayBuddy() {
             <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
               <Clock size={14} className="-mt-0.5" /> Available Times
               <span className="text-xs font-normal text-gray-400 ml-1">({selTimes.length}/3 selected)</span>
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.getElementById('buddy-time-picker') as HTMLInputElement;
-                  if (input) { input.showPicker(); }
-                }}
-                className="ml-auto p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors"
+              <label
+                htmlFor="buddy-time-picker"
+                className="ml-auto p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors cursor-pointer"
                 title="Pick a custom time"
               >
                 <Plus size={14} />
-              </button>
+              </label>
               <input
                 id="buddy-time-picker"
                 type="time"
-                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+                style={{ position: 'fixed', top: '-200px', left: '-200px', opacity: 0 }}
                 tabIndex={-1}
                 onChange={(e) => {
                   const raw = e.target.value;
@@ -1359,21 +1351,17 @@ function WeekendPollPanel({
           {/* Poll Dates */}
           <div className="flex items-center gap-1.5 mb-1">
             <p className="text-[10px] font-semibold text-gray-500 uppercase">Dates</p>
-            <button
-              type="button"
-              onClick={() => {
-                const input = document.getElementById('new-poll-date-picker') as HTMLInputElement;
-                if (input) { input.showPicker(); }
-              }}
-              className="ml-auto p-1 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+            <label
+              htmlFor="new-poll-date-picker"
+              className="ml-auto p-1 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
               title="Add a date"
             >
               <Plus size={12} />
-            </button>
+            </label>
             <input
               id="new-poll-date-picker"
               type="date"
-              style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+              style={{ position: 'fixed', top: '-200px', left: '-200px', opacity: 0 }}
               tabIndex={-1}
               min={new Date().toISOString().split('T')[0]}
               onChange={(e) => {
@@ -1401,21 +1389,17 @@ function WeekendPollPanel({
           {/* Poll Times */}
           <div className="flex items-center gap-1.5 mb-1">
             <p className="text-[10px] font-semibold text-gray-500 uppercase">Times</p>
-            <button
-              type="button"
-              onClick={() => {
-                const input = document.getElementById('new-poll-time-picker') as HTMLInputElement;
-                if (input) { input.showPicker(); }
-              }}
-              className="ml-auto p-1 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+            <label
+              htmlFor="new-poll-time-picker"
+              className="ml-auto p-1 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
               title="Add a time"
             >
               <Plus size={12} />
-            </button>
+            </label>
             <input
               id="new-poll-time-picker"
               type="time"
-              style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+              style={{ position: 'fixed', top: '-200px', left: '-200px', opacity: 0 }}
               tabIndex={-1}
               onChange={(e) => {
                 const raw = e.target.value;
