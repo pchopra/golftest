@@ -165,6 +165,12 @@ export default function Login() {
           </div>
 
           <div className="space-y-3 mb-6">
+            {currentUser.phone && (
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Phone</span>
+                <span className="text-sm font-medium text-gray-900">{currentUser.phone}</span>
+              </div>
+            )}
             <div className="flex justify-between py-2 border-b border-gray-100">
               <span className="text-sm text-gray-500">Skill Level</span>
               <span className="text-sm font-medium text-gray-900">{currentUser.skillLevel}</span>
