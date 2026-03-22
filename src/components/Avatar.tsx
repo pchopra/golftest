@@ -30,7 +30,7 @@ export default function Avatar({ firstName, lastName, profilePicture, size = 'md
         />
       ) : (
         <div className="w-full h-full rounded-full bg-gradient-to-br from-golf-400 to-golf-700 flex items-center justify-center text-white font-bold">
-          {firstName[0]}{lastName[0]}
+          {(firstName || '?')[0]}{(lastName || '?')[0]}
         </div>
       )}
       {editable && (

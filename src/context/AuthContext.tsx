@@ -47,9 +47,9 @@ const STORAGE_KEYS = {
 function profileToUser(p: Record<string, unknown>): User {
   return {
     id: p.id as string,
-    firstName: p.first_name as string,
-    lastName: p.last_name as string,
-    email: p.email as string,
+    firstName: (p.first_name as string) || '',
+    lastName: (p.last_name as string) || '',
+    email: (p.email as string) || '',
     phone: (p.phone as string) || '',
     skillLevel: (p.skill_level as User['skillLevel']) || 'Beginner',
     gender: (p.gender as User['gender']) || 'Prefer not to say',
@@ -193,11 +193,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
-      if (s?.user) {
-        loadSupabaseProfile(s.user.id);
-      } else if (_event === 'SIGNED_OUT') {
+      if (_event === 'SIGNED_OUT') {
         setCurrentUser(null);
       }
+      // Note: profile loading is handled by getSession (on mount) and loginWithSupabase (on sign-in)
     });
 
     return () => subscription.unsubscribe();
