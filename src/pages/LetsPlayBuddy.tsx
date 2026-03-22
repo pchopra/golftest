@@ -320,38 +320,42 @@ export default function LetsPlayBuddy() {
         <div className="space-y-5">
           {/* Dates */}
           <div>
-            <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
               <Calendar size={14} className="-mt-0.5" /> Available Dates
               <span className="text-xs font-normal text-gray-400 ml-1">({selDates.length}/5 selected)</span>
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.getElementById('buddy-date-picker') as HTMLInputElement;
-                  input?.showPicker?.();
-                  input?.click();
-                }}
-                className="ml-auto p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors"
-                title="Pick a date from calendar"
-              >
-                <Plus size={14} />
-              </button>
-              <input
-                id="buddy-date-picker"
-                type="date"
-                className="sr-only"
-                min={new Date().toISOString().split('T')[0]}
-                onChange={(e) => {
-                  const date = e.target.value;
-                  if (date && !selDates.includes(date)) {
-                    setSelDates(prev => {
-                      const next = prev.length >= 5 ? [...prev.slice(1), date] : [...prev, date];
-                      return next.sort();
-                    });
-                  }
-                  e.target.value = '';
-                }}
-              />
-            </label>
+              <div className="ml-auto relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const input = document.getElementById('buddy-date-picker') as HTMLInputElement;
+                    if (input) {
+                      input.focus();
+                      input.showPicker();
+                    }
+                  }}
+                  className="p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors"
+                  title="Pick a date from calendar"
+                >
+                  <Plus size={14} />
+                </button>
+                <input
+                  id="buddy-date-picker"
+                  type="date"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => {
+                    const date = e.target.value;
+                    if (date && !selDates.includes(date)) {
+                      setSelDates(prev => {
+                        const next = prev.length >= 5 ? [...prev.slice(1), date] : [...prev, date];
+                        return next.sort();
+                      });
+                    }
+                    e.target.value = '';
+                  }}
+                />
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2">
               {upcomingDates.map(date => {
                 const isSelected = selDates.includes(date);
@@ -391,39 +395,43 @@ export default function LetsPlayBuddy() {
 
           {/* Times */}
           <div>
-            <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
               <Clock size={14} className="-mt-0.5" /> Available Times
               <span className="text-xs font-normal text-gray-400 ml-1">({selTimes.length}/3 selected)</span>
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.getElementById('buddy-time-picker') as HTMLInputElement;
-                  input?.showPicker?.();
-                  input?.click();
-                }}
-                className="ml-auto p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors"
-                title="Pick a custom time"
-              >
-                <Plus size={14} />
-              </button>
-              <input
-                id="buddy-time-picker"
-                type="time"
-                className="sr-only"
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  if (!raw) return;
-                  const [h, m] = raw.split(':').map(Number);
-                  const ampm = h >= 12 ? 'PM' : 'AM';
-                  const h12 = h % 12 || 12;
-                  const formatted = `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
-                  if (!selTimes.includes(formatted)) {
-                    setSelTimes(prev => prev.length >= 3 ? [...prev.slice(1), formatted] : [...prev, formatted]);
-                  }
-                  e.target.value = '';
-                }}
-              />
-            </label>
+              <div className="ml-auto relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const input = document.getElementById('buddy-time-picker') as HTMLInputElement;
+                    if (input) {
+                      input.focus();
+                      input.showPicker();
+                    }
+                  }}
+                  className="p-1.5 rounded-lg border border-golf-300 text-golf-700 hover:bg-golf-50 transition-colors"
+                  title="Pick a custom time"
+                >
+                  <Plus size={14} />
+                </button>
+                <input
+                  id="buddy-time-picker"
+                  type="time"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (!raw) return;
+                    const [h, m] = raw.split(':').map(Number);
+                    const ampm = h >= 12 ? 'PM' : 'AM';
+                    const h12 = h % 12 || 12;
+                    const formatted = `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+                    if (!selTimes.includes(formatted)) {
+                      setSelTimes(prev => prev.length >= 3 ? [...prev.slice(1), formatted] : [...prev, formatted]);
+                    }
+                    e.target.value = '';
+                  }}
+                />
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2">
               {timeSlots.map(time => {
                 const isSelected = selTimes.includes(time);
