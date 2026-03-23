@@ -216,13 +216,10 @@ export default function LetsPlayBuddy() {
   }).filter(b => b.avail).sort((a, b) => a.distance - b.distance);
 
   // Hot deals near user (use zip-derived coords so deals refresh per user location)
-  const nearbyDeals = useMemo(() =>
-    hotDeals
-      .map(d => ({ ...d, distance: getDistanceMiles(userCoords.lat, userCoords.lng, d.lat, d.lng) }))
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, 3),
-    [userCoords.lat, userCoords.lng]
-  );
+  const nearbyDeals = hotDeals
+    .map(d => ({ ...d, distance: getDistanceMiles(userCoords.lat, userCoords.lng, d.lat, d.lng) }))
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 3);
 
   // Filter by availability count
   const getFilteredBuddies = (filter: AvailFilter) => {
