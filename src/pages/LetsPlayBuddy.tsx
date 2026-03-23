@@ -93,6 +93,9 @@ export default function LetsPlayBuddy() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [deleteRevealedGroupId, setDeleteRevealedGroupId] = useState<string | null>(null);
   const [groupCallMembers, setGroupCallMembers] = useState<User[]>([]);
+  const [showReminderPicker, setShowReminderPicker] = useState(false);
+  const [reminderDate, setReminderDate] = useState('');
+  const [reminderTime, setReminderTime] = useState('');
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartX = useRef(0);
 
@@ -780,18 +783,24 @@ export default function LetsPlayBuddy() {
                       <Clock size={10} /> {group.teeTime}
                     </span>
                   )}
-                  {group.teeDate && group.teeTime && (
-                    <button
-                      onClick={() => downloadTeeTimeReminder(group.name, group.teeDate!, group.teeTime!)}
-                      className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 hover:bg-amber-100 active:scale-95 transition-all"
-                      title="Set 30-min reminder"
-                    >
-                      <Bell size={10} /> Remind Me
-                    </button>
-                  )}
                 </div>
               )}
             </div>
+            <button
+              onClick={() => {
+                if (group.teeDate && group.teeTime) {
+                  downloadTeeTimeReminder(group.name, group.teeDate, group.teeTime);
+                } else {
+                  setReminderDate(group.teeDate || '');
+                  setReminderTime(group.teeTime || '');
+                  setShowReminderPicker(!showReminderPicker);
+                }
+              }}
+              className={`p-2 rounded-xl border transition-all ${showReminderPicker ? 'border-amber-500 bg-amber-50 text-amber-600' : 'border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100'}`}
+              title="Set 30-min reminder before tee time"
+            >
+              <Bell size={18} />
+            </button>
             <button
               onClick={() => setShowGroupAvailability(!showGroupAvailability)}
               className={`p-2 rounded-xl border transition-all ${showGroupAvailability ? 'border-golf-600 bg-golf-50 text-golf-700' : 'border-gray-200 text-gray-500'}`}
@@ -825,6 +834,51 @@ export default function LetsPlayBuddy() {
               ) : (
                 <p className="text-xs text-gray-400 text-center py-2">No matching availability for this filter.</p>
               )}
+            </div>
+          )}
+
+          {/* Reminder Picker Panel */}
+          {showReminderPicker && (
+            <div className="pb-3 animate-fade-in">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1">
+                  <Bell size={14} className="text-amber-500" /> Set Tee Time Reminder
+                </h4>
+                <button onClick={() => setShowReminderPicker(false)} className="text-gray-400"><X size={16} /></button>
+              </div>
+              <p className="text-[11px] text-gray-500 mb-2">Pick date & time. You'll get an alarm 30 minutes before.</p>
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="date"
+                  value={reminderDate}
+                  onChange={(e) => setReminderDate(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-gray-50 text-sm rounded-xl border border-gray-200 focus:outline-none focus:border-golf-400"
+                />
+                <select
+                  value={reminderTime}
+                  onChange={(e) => setReminderTime(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-gray-50 text-sm rounded-xl border border-gray-200 focus:outline-none focus:border-golf-400"
+                >
+                  <option value="">Select time</option>
+                  {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <button
+                onClick={() => {
+                  if (reminderDate && reminderTime) {
+                    downloadTeeTimeReminder(group.name, reminderDate, reminderTime);
+                    setShowReminderPicker(false);
+                  }
+                }}
+                disabled={!reminderDate || !reminderTime}
+                className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                  reminderDate && reminderTime
+                    ? 'bg-amber-500 hover:bg-amber-600 text-white active:scale-[0.98]'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <Bell size={16} /> Set 30-Min Reminder
+              </button>
             </div>
           )}
         </div>
