@@ -8,6 +8,39 @@ const iconForType = {
   message: MessageCircle,
 };
 
+// Synthesize a short two-tone chime using the Web Audio API.
+// No external audio files required.
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const now = ctx.currentTime;
+
+    // Two-note chime: C6 then E6
+    const notes = [
+      { freq: 1047, start: 0, dur: 0.12 },
+      { freq: 1319, start: 0.13, dur: 0.15 },
+    ];
+
+    notes.forEach(({ freq, start, dur }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.18, now + start);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + start + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + start);
+      osc.stop(now + start + dur + 0.01);
+    });
+
+    // Close context after sound finishes
+    setTimeout(() => ctx.close(), 500);
+  } catch {
+    // Audio not available — silent fallback
+  }
+}
+
 interface ToastItem {
   notification: AppNotification;
   visible: boolean;
@@ -24,6 +57,7 @@ export default function ToastContainer() {
 
   useEffect(() => {
     pushToast = (n: AppNotification) => {
+      playNotificationSound();
       setToasts(prev => [...prev, { notification: n, visible: true }]);
     };
     return () => { pushToast = () => {}; };
