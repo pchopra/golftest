@@ -16,6 +16,17 @@ export interface User {
   createdAt: string;
 }
 
+export interface AppNotification {
+  id: string;
+  type: 'group_created' | 'group_added' | 'message';
+  title: string;
+  body: string;
+  groupId?: string;
+  fromUserId?: string;
+  timestamp: string;
+  read: boolean;
+}
+
 export interface BuddyAvailability {
   userId: string;
   availableDates: string[]; // ISO date strings

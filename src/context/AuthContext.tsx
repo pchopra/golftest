@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import type { User, BuddyAvailability, ChatGroup, ChatMessage, WeekendPoll, PollVote } from '../data/mockUsers';
+import type { User, BuddyAvailability, ChatGroup, ChatMessage, WeekendPoll, PollVote, AppNotification } from '../data/mockUsers';
 import { mockUsers, mockAvailability, mockChatGroups, mockWeekendPolls } from '../data/mockUsers';
 import { Storage } from '../utils/storage';
 import { supabase } from '../lib/supabase';
@@ -32,6 +32,11 @@ interface AuthContextType {
   voteOnPoll: (pollId: string, vote: Omit<PollVote, 'userId'>) => void;
   updateProfilePicture: (dataUrl: string) => Promise<void> | void;
   updateProfile: (fields: Partial<Pick<User, 'firstName' | 'lastName' | 'phone' | 'skillLevel' | 'gender' | 'address' | 'lat' | 'lng'>>) => Promise<void>;
+  notifications: AppNotification[];
+  unreadCount: number;
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
+  clearNotifications: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -42,6 +47,7 @@ const STORAGE_KEYS = {
   availability: 'golf-availability',
   chatGroups: 'golf-chat-groups',
   weekendPolls: 'golf-weekend-polls',
+  notifications: 'golf-notifications',
 };
 
 // Convert Supabase profile row to app User type
@@ -90,6 +96,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stored = Storage.getSync(STORAGE_KEYS.weekendPolls);
     return stored ? JSON.parse(stored) : mockWeekendPolls;
   });
+
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
+    const stored = Storage.getSync(STORAGE_KEYS.notifications);
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  const addNotification = useCallback((n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {
+    const notif: AppNotification = {
+      ...n,
+      id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: new Date().toISOString(),
+      read: false,
+    };
+    setNotifications(prev => [notif, ...prev]);
+  }, []);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markNotificationRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const markAllNotificationsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const clearNotifications = () => setNotifications([]);
 
   // Build a fallback User from Supabase auth session so the app never gets stuck
   const buildFallbackUser = useCallback((userId: string, email: string, meta: Record<string, unknown> = {}): User => ({
@@ -292,6 +325,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     Storage.set(STORAGE_KEYS.weekendPolls, JSON.stringify(weekendPolls));
   }, [weekendPolls]);
+
+  useEffect(() => {
+    Storage.set(STORAGE_KEYS.notifications, JSON.stringify(notifications));
+  }, [notifications]);
 
   // Supabase email+password login
   const loginWithSupabase = async (email: string, password: string): Promise<{ error: string | null }> => {
@@ -496,6 +533,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ...(teeTime && { teeTime }),
     };
     setChatGroups(prev => [...prev, group]);
+
+    // Notify added members (not the creator)
+    const creatorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Someone';
+    memberIds.filter(id => id !== creatorId).forEach(() => {
+      addNotification({
+        type: 'group_created',
+        title: 'New Group',
+        body: `${creatorName} added you to "${name}"`,
+        groupId: group.id,
+        fromUserId: creatorId,
+      });
+    });
+
     return group;
   };
 
@@ -512,12 +562,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const addGroupMember = (groupId: string, userId: string) => {
     if (!currentUser) return;
+    let added = false;
+    let groupName = '';
     setChatGroups(prev => prev.map(g => {
       if (g.id !== groupId) return g;
       if (!(g.adminIds || []).includes(currentUser.id)) return g;
       if (g.memberIds.includes(userId)) return g;
+      added = true;
+      groupName = g.name;
       return { ...g, memberIds: [...g.memberIds, userId] };
     }));
+    if (added) {
+      addNotification({
+        type: 'group_added',
+        title: 'Added to Group',
+        body: `${currentUser.firstName} ${currentUser.lastName} added you to "${groupName}"`,
+        groupId,
+        fromUserId: currentUser.id,
+      });
+    }
   };
 
   const removeGroupMember = (groupId: string, userId: string) => {
@@ -588,11 +651,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       text,
       timestamp: new Date().toISOString(),
     };
+    let groupName = '';
     setChatGroups(prev =>
-      prev.map(g =>
-        g.id === groupId ? { ...g, messages: [...g.messages, msg] } : g
-      )
+      prev.map(g => {
+        if (g.id !== groupId) return g;
+        groupName = g.name;
+        return { ...g, messages: [...g.messages, msg] };
+      })
     );
+
+    // Notify other members in the group
+    const senderName = `${currentUser.firstName} ${currentUser.lastName}`;
+    const preview = text.length > 50 ? text.slice(0, 50) + '...' : text;
+    addNotification({
+      type: 'message',
+      title: groupName || 'New Message',
+      body: `${senderName}: ${preview}`,
+      groupId,
+      fromUserId: currentUser.id,
+    });
 
     // Sync to Supabase if authenticated
     if (session) {
@@ -653,6 +730,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setMyAvailability, getMyAvailability, toggleFreeNow,
       createChatGroup, deleteGroup, addGroupMember, removeGroupMember, makeGroupAdmin, leaveGroup, sendMessage,
       createWeekendPoll, voteOnPoll, updateProfilePicture, updateProfile,
+      notifications, unreadCount, markNotificationRead, markAllNotificationsRead, clearNotifications,
     }}>
       {children}
     </AuthContext.Provider>

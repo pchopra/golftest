@@ -16,6 +16,7 @@ import EquipmentDeals from './pages/EquipmentDeals';
 import GolfVideos from './pages/GolfVideos';
 import GolfPodcasts from './pages/GolfPodcasts';
 import RoboBuddy from './pages/RoboBuddy';
+import Notifications from './pages/Notifications';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
@@ -62,6 +63,7 @@ export default function App() {
             <Route path="/videos" element={<GolfVideos />} />
             <Route path="/podcasts" element={<GolfPodcasts />} />
             <Route path="/robobuddy" element={<RoboBuddy />} />
+            <Route path="/notifications" element={<Notifications />} />
           </Routes>
           <BottomTabBar />
         </div>
