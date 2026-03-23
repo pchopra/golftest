@@ -88,6 +88,15 @@ const defaultFeatures: Feature[] = [
     gradient: "from-teal-500/70 to-cyan-900/80",
   },
   {
+    id: "buddy",
+    title: "Let's Play Buddy",
+    description: "Your golf social network — connect, match & tee off",
+    icon: Users,
+    route: "/buddy",
+    image: cardImages.green,
+    gradient: "from-green-500/70 to-emerald-900/80",
+  },
+  {
     id: "kids",
     title: "KidsLoveGolf",
     description: "Coaching & tips for juniors",
@@ -140,15 +149,6 @@ const defaultFeatures: Feature[] = [
     route: "/podcasts",
     image: cardImages.landscape,
     gradient: "from-indigo-500/70 to-violet-900/80",
-  },
-  {
-    id: "buddy",
-    title: "Let's Play Buddy",
-    description: "Your golf social network — connect, match & tee off",
-    icon: Users,
-    route: "/buddy",
-    image: cardImages.green,
-    gradient: "from-green-500/70 to-emerald-900/80",
   },
 ];
 
