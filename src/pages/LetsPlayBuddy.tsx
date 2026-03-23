@@ -9,7 +9,7 @@ import { getCoordinatesForZip } from '../data/zipCoordinates';
 import type { BuddyAvailability, User, ChatGroup, WeekendPoll } from '../data/mockUsers';
 import {
   Calendar, Clock, MapPin, Users, MessageCircle, Send,
-  ChevronRight, Plus, Check, Star, DollarSign, ArrowLeft,
+  ChevronRight, Plus, Check, Star, ArrowLeft,
   UserCheck, Users2, Filter, Flame, BarChart3, Car, Eye, Phone,
   Settings, Trash2, LogOut, Shield, UserPlus, UserMinus, X,
   Search, ExternalLink, Mic,
@@ -1365,29 +1365,59 @@ function AvailabilityResults({
         })}
       </div>
 
-      {/* Top 3 Hot Deal Courses */}
+      {/* Top 3 Hot Deals – Google AI Search-style tiles */}
       {nearbyDeals.length > 0 && (
-        <div>
-          <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-1">
-            <Flame size={14} className="text-orange-500" /> Top 3 Hot Deals Nearby
-          </h3>
-          <div className="space-y-2">
-            {nearbyDeals.map(deal => (
-              <div key={deal.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${deal.imageGradient} flex items-center justify-center shrink-0`}>
-                  <DollarSign size={20} className="text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{deal.courseName}</p>
-                  <p className="text-xs text-gray-500">{deal.city}, {deal.state} · {deal.distance} mi</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs font-bold text-golf-700">${deal.dealPrice}</span>
-                    <span className="text-xs text-gray-400 line-through">${deal.originalPrice}</span>
-                    <span className="text-[10px] text-gray-500">· {deal.teeTime} · {deal.holes}H</span>
+        <div className="rounded-2xl bg-gradient-to-b from-blue-50/80 to-white border border-blue-100 overflow-hidden">
+          {/* AI header bar */}
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-white/60 border-b border-blue-100">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500">
+              <Star size={10} className="text-white" />
+            </span>
+            <span className="text-xs font-semibold text-gray-700 tracking-wide">Top 3 Golf Deals Nearby</span>
+            <span className="ml-auto text-[10px] text-gray-400 font-medium">AI-powered</span>
+          </div>
+
+          {/* Tile grid */}
+          <div className="flex gap-2.5 px-3 py-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+            {nearbyDeals.map(deal => {
+              const discount = Math.round(((deal.originalPrice - deal.dealPrice) / deal.originalPrice) * 100);
+              return (
+                <button
+                  key={deal.id}
+                  onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(deal.courseName + ' tee time')}`, '_blank')}
+                  className="min-w-[160px] flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden snap-start text-left hover:shadow-md hover:border-blue-200 transition-all group"
+                >
+                  {/* Gradient header with course name */}
+                  <div className={`h-16 bg-gradient-to-br ${deal.imageGradient} relative flex items-end p-2.5`}>
+                    <div className="absolute top-1.5 right-1.5 bg-red-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                      <Flame size={8} />
+                      {discount}%
+                    </div>
+                    <p className="text-white font-bold text-xs leading-tight drop-shadow line-clamp-2">{deal.courseName}</p>
                   </div>
-                </div>
-              </div>
-            ))}
+                  {/* Details */}
+                  <div className="p-2.5 space-y-1.5">
+                    <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                      <MapPin size={10} className="shrink-0" />
+                      <span className="truncate">{deal.city}, {deal.state}</span>
+                      <span className="text-blue-600 font-semibold whitespace-nowrap">{deal.distance} mi</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                      <Clock size={10} className="shrink-0" />
+                      <span>{deal.teeTime} · {deal.holes}H</span>
+                      {deal.includesCart && <Car size={10} className="text-green-600" />}
+                    </div>
+                    <div className="flex items-baseline gap-1.5 pt-0.5">
+                      <span className="text-sm font-bold text-green-600">${deal.dealPrice}</span>
+                      <span className="text-[10px] text-gray-400 line-through">${deal.originalPrice}</span>
+                    </div>
+                    <div className="text-[10px] text-blue-600 font-semibold group-hover:underline">
+                      Book Deal →
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
