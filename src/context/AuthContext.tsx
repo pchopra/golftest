@@ -156,7 +156,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         address: meta.address || '',
         lat: meta.lat ?? 37.7749,
         lng: meta.lng ?? -122.4194,
-        profile_picture: meta.profile_picture || '',
       };
 
       const { data: inserted, error: insertErr } = await supabase
