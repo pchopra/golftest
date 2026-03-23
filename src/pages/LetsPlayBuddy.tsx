@@ -185,6 +185,15 @@ export default function LetsPlayBuddy() {
   const getCourseName = (id: string) =>
     id.startsWith('custom:') ? id.slice(7) : (mockCourses.find(c => c.id === id)?.name || 'Unknown');
 
+  // Determine if the "Set Availability" button should pulse to grab attention.
+  // Pulse when: no availability set, or all selected dates are in the past.
+  const needsAvailability = useMemo(() => {
+    const myAvail = getMyAvailability();
+    if (!myAvail || myAvail.availableDates.length === 0) return true;
+    const today = new Date().toISOString().split('T')[0];
+    return myAvail.availableDates.every(d => d < today);
+  }, [getMyAvailability]);
+
   // Compute available buddies with their availability and distance
   const buddiesWithAvail = otherUsers.map(user => {
     const avail = availability.find(a => a.userId === user.id);
@@ -980,13 +989,29 @@ export default function LetsPlayBuddy() {
             <p className="text-xs text-green-100 mt-0.5">Find partners, plan tee times together</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowSetAvailability(true)}
-          className="relative mt-4 w-full py-3 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 transition-colors shadow-sm flex items-center justify-center gap-2"
-        >
-          <Calendar size={16} />
-          Set Availability
-        </button>
+        <div className="relative mt-4">
+          {needsAvailability && (
+            <div className="absolute -inset-1 rounded-2xl bg-amber-400 animate-pulse opacity-60" />
+          )}
+          <button
+            onClick={() => setShowSetAvailability(true)}
+            className={`relative w-full rounded-xl text-white text-sm font-bold shadow-sm flex flex-col items-center justify-center gap-1 transition-colors ${
+              needsAvailability
+                ? 'py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 bg-[length:200%_100%] animate-[shimmer_2s_ease-in-out_infinite] hover:from-amber-600 hover:via-orange-600 hover:to-amber-600'
+                : 'py-3 bg-amber-500 hover:bg-amber-600'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <Calendar size={16} />
+              Set Availability
+            </span>
+            {needsAvailability && (
+              <span className="text-[11px] font-medium text-amber-100">
+                👋 Your buddies are waiting!
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="px-4">

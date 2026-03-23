@@ -66,6 +66,11 @@ body {
   50% { transform: rotate(0.8deg); }
 }
 
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
