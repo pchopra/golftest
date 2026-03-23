@@ -1034,7 +1034,7 @@ export default function LetsPlayBuddy() {
           </button>
         </div>
 
-        {/* Hey Caddie — Senior Assistant Tile */}
+        {/* Senior Golf Concierge — Senior Assistant Tile */}
         <button
           onClick={() => navigate('/hey-caddie')}
           className="relative w-full mt-3 overflow-hidden rounded-xl shadow-lg group active:scale-[0.98] transition-transform"
@@ -1046,7 +1046,7 @@ export default function LetsPlayBuddy() {
             </div>
             <div className="flex-1 text-left">
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-extrabold text-white tracking-tight">Hey Caddie</h3>
+                <h3 className="text-base font-extrabold text-white tracking-tight">Senior Golf Concierge</h3>
                 <span className="px-1.5 py-0.5 bg-white/20 rounded-full text-[9px] font-bold text-white uppercase tracking-wider">Voice AI</span>
               </div>
               <p className="text-white/90 text-[11px] font-medium mt-0.5">SOS, rides, tee times & more — just speak!</p>

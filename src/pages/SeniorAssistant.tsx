@@ -268,7 +268,7 @@ export default function SeniorAssistant() {
             <ArrowLeft size={18} className="text-white" />
           </button>
           <div className="flex-1">
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Hey Caddie</h1>
+            <h1 className="text-2xl font-extrabold text-white tracking-tight">Senior Golf Concierge</h1>
             <p className="text-orange-100 text-xs font-medium">Your voice-powered golf assistant</p>
           </div>
           {/* Emergency Contact Setup */}

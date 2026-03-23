@@ -413,7 +413,7 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Hey Caddie — Senior Assistant Hero Card */}
+      {/* Senior Golf Concierge — Senior Assistant Hero Card */}
       <div className="px-4 mb-4">
         <button
           onClick={() => navigate("/hey-caddie")}
@@ -432,7 +432,7 @@ export default function Home() {
             <div className="flex-1 text-left">
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-extrabold text-white tracking-tight">
-                  Hey Caddie
+                  Senior Golf Concierge
                 </h3>
                 <span className="px-2 py-0.5 bg-white/20 rounded-full text-[10px] font-bold text-white uppercase tracking-wider">
                   Voice AI
