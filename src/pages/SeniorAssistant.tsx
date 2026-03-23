@@ -18,6 +18,7 @@ interface AssistantAction {
 // ─── Voice Command Hook ───
 function useVoiceCommand(onResult: (text: string) => void) {
   const [listening, setListening] = useState(false);
+  const [error, setError] = useState('');
   const recognitionRef = useRef<any>(null);
   const onResultRef = useRef(onResult);
   onResultRef.current = onResult;
@@ -26,34 +27,58 @@ function useVoiceCommand(onResult: (text: string) => void) {
   const supported = !!SR;
 
   const toggle = () => {
-    if (!supported) return;
+    if (!supported) {
+      setError('Voice not supported in this browser.');
+      return;
+    }
+    setError('');
     if (listening && recognitionRef.current) {
       recognitionRef.current.stop();
       recognitionRef.current = null;
       setListening(false);
     } else {
-      // Create a fresh instance each time to avoid stale-object issues
-      const recognition = new SR();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-      recognition.maxAlternatives = 1;
-      recognition.onresult = (event: any) => {
-        const text = event.results[0][0].transcript;
-        onResultRef.current(text);
-      };
-      recognition.onerror = () => setListening(false);
-      recognition.onend = () => {
-        recognitionRef.current = null;
-        setListening(false);
-      };
-      recognitionRef.current = recognition;
-      recognition.start();
-      setListening(true);
+      // Request mic permission first, then start recognition
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          // Stop the stream immediately — we only needed permission
+          stream.getTracks().forEach((t) => t.stop());
+
+          const recognition = new SR();
+          recognition.continuous = false;
+          recognition.interimResults = false;
+          recognition.lang = 'en-US';
+          recognition.maxAlternatives = 1;
+          recognition.onresult = (event: any) => {
+            const text = event.results[0][0].transcript;
+            onResultRef.current(text);
+          };
+          recognition.onerror = (e: any) => {
+            const msg =
+              e.error === 'not-allowed'
+                ? 'Microphone access denied. Please allow mic permissions.'
+                : e.error === 'no-speech'
+                  ? 'No speech detected. Tap the mic and try again.'
+                  : `Mic error: ${e.error || 'unknown'}`;
+            setError(msg);
+            setListening(false);
+          };
+          recognition.onend = () => {
+            recognitionRef.current = null;
+            setListening(false);
+          };
+          recognitionRef.current = recognition;
+          recognition.start();
+          setListening(true);
+        })
+        .catch(() => {
+          setError('Microphone access denied. Please allow mic permissions in your browser settings.');
+          setListening(false);
+        });
     }
   };
 
-  return { listening, supported, toggle };
+  return { listening, supported, error, toggle };
 }
 
 // ─── Text-to-Speech ───
@@ -137,7 +162,8 @@ export default function SeniorAssistant() {
     }, 600);
   };
 
-  const { listening, supported, toggle } = useVoiceCommand(handleVoiceResult);
+  const { listening, error: micError, toggle } = useVoiceCommand(handleVoiceResult);
+  const [textInput, setTextInput] = useState('');
 
   const handleRideRequest = () => {
     // Deep-link to Uber
@@ -284,35 +310,60 @@ export default function SeniorAssistant() {
         {/* Voice Command Area */}
         <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
           <p className="text-white/90 text-sm font-semibold text-center mb-3">
-            {listening ? '🎙️ Listening... speak now!' : 'Tap the mic and tell me what you need'}
+            {listening ? '🎙️ Listening... speak now!' : 'Tap the mic or type a command below'}
           </p>
 
           {/* Mic Button */}
           <div className="flex justify-center mb-3">
             <button
               onClick={toggle}
-              disabled={!supported}
               className={`w-20 h-20 rounded-full flex items-center justify-center shadow-xl transition-all active:scale-95 ${
                 listening
                   ? 'bg-red-500 animate-pulse shadow-red-500/50'
-                  : supported
-                    ? 'bg-white shadow-white/30 hover:scale-105'
-                    : 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-white shadow-white/30 hover:scale-105'
               }`}
             >
               {listening ? (
                 <MicOff size={36} className="text-white" />
               ) : (
-                <Mic size={36} className={supported ? 'text-orange-500' : 'text-gray-600'} />
+                <Mic size={36} className="text-orange-500" />
               )}
             </button>
           </div>
 
-          {!supported && (
-            <p className="text-center text-yellow-200 text-xs font-medium">
-              Voice not supported in this browser. Use the buttons below instead.
+          {micError && (
+            <p className="text-center text-yellow-200 text-xs font-medium mb-2">
+              {micError}
             </p>
           )}
+
+          {/* Text input fallback */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder='Type a command, e.g. "Find courses nearby"'
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && textInput.trim()) {
+                  handleVoiceResult(textInput.trim());
+                  setTextInput('');
+                }
+              }}
+              className="flex-1 px-4 py-2.5 bg-white/15 text-white placeholder-white/50 text-sm rounded-xl border border-white/20 focus:outline-none focus:border-white/50"
+            />
+            <button
+              onClick={() => {
+                if (textInput.trim()) {
+                  handleVoiceResult(textInput.trim());
+                  setTextInput('');
+                }
+              }}
+              className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl transition-colors"
+            >
+              Go
+            </button>
+          </div>
 
           {/* Voice Feedback */}
           {(voiceText || feedback || processing) && (
