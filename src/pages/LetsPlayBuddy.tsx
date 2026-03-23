@@ -215,8 +215,8 @@ export default function LetsPlayBuddy() {
     return { user, avail, distance: dist };
   }).filter(b => b.avail).sort((a, b) => a.distance - b.distance);
 
-  // Hot deals near user – 25-mile radius from profile zip code, valid today
-  const DEAL_RADIUS_MILES = 25;
+  // Hot deals near user – 50-mile radius from profile zip code, valid today
+  const DEAL_RADIUS_MILES = 50;
   const nearbyDeals = hotDeals
     .filter(d => d.validDays.includes(new Date().getDay()))
     .map(d => ({ ...d, distance: getDistanceMiles(userCoords.lat, userCoords.lng, d.lat, d.lng) }))
@@ -1385,7 +1385,7 @@ function AvailabilityResults({
 
           {/* ── Summary sentence ── */}
           <p className="px-4 pb-3 text-xs text-gray-700 leading-relaxed">
-            Top <span className="font-semibold">golf course deals</span> within <span className="font-semibold">25 miles</span>{userZip ? <> of <span className="font-semibold">{userZip}</span></> : ' of you'} — available today with the best rates.
+            Top <span className="font-semibold">golf course deals</span> within <span className="font-semibold">50 miles</span>{userZip ? <> of <span className="font-semibold">{userZip}</span></> : ' of you'} — available today with the best rates.
           </p>
 
           {/* ── Result tiles ── */}
