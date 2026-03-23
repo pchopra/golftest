@@ -215,9 +215,12 @@ export default function LetsPlayBuddy() {
     return { user, avail, distance: dist };
   }).filter(b => b.avail).sort((a, b) => a.distance - b.distance);
 
-  // Hot deals near user (use zip-derived coords so deals refresh per user location)
+  // Hot deals near user – 25-mile radius from profile zip code, valid today
+  const DEAL_RADIUS_MILES = 25;
   const nearbyDeals = hotDeals
+    .filter(d => d.validDays.includes(new Date().getDay()))
     .map(d => ({ ...d, distance: getDistanceMiles(userCoords.lat, userCoords.lng, d.lat, d.lng) }))
+    .filter(d => d.distance <= DEAL_RADIUS_MILES)
     .sort((a, b) => a.distance - b.distance)
     .slice(0, 3);
 
@@ -749,6 +752,7 @@ export default function LetsPlayBuddy() {
                   commonDates={groupCommonDates}
                   commonTimes={groupCommonTimes}
                   nearbyDeals={nearbyDeals}
+                  userZip={userCoords.zip}
                   formatDate={formatDate}
                   getCourseName={getCourseName}
                   groupCallMembers={groupCallMembers}
@@ -1122,6 +1126,7 @@ export default function LetsPlayBuddy() {
               commonDates={commonDates}
               commonTimes={commonTimes}
               nearbyDeals={nearbyDeals}
+              userZip={userCoords.zip}
               formatDate={formatDate}
               getCourseName={getCourseName}
               favoriteBuddyIds={favoriteBuddyIds}
@@ -1272,6 +1277,7 @@ function AvailabilityResults({
   commonDates,
   commonTimes,
   nearbyDeals,
+  userZip,
   formatDate,
   getCourseName,
   favoriteBuddyIds = [],
@@ -1283,6 +1289,7 @@ function AvailabilityResults({
   commonDates: string[];
   commonTimes: string[];
   nearbyDeals: (typeof hotDeals[number] & { distance: number })[];
+  userZip: string;
   formatDate: (iso: string) => string;
   getCourseName: (id: string) => string;
   favoriteBuddyIds?: string[];
@@ -1378,7 +1385,7 @@ function AvailabilityResults({
 
           {/* ── Summary sentence ── */}
           <p className="px-4 pb-3 text-xs text-gray-700 leading-relaxed">
-            Here are the <span className="font-semibold">top 3 golf course deals</span> near you, sorted by distance — with the best available rates and tee times.
+            Top <span className="font-semibold">golf course deals</span> within <span className="font-semibold">25 miles</span>{userZip ? <> of <span className="font-semibold">{userZip}</span></> : ' of you'} — available today with the best rates.
           </p>
 
           {/* ── Result tiles ── */}
