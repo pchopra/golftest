@@ -1008,11 +1008,9 @@ export default function LetsPlayBuddy() {
       {/* Banner */}
       <div className="relative bg-gradient-to-br from-green-700 via-green-600 to-emerald-500 px-5 pt-6 pb-5 rounded-b-3xl shadow-md mb-4">
         <div className="absolute inset-0 opacity-10 rounded-b-3xl" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'30\' cy=\'30\' r=\'8\' fill=\'%23fff\' fill-opacity=\'0.3\'/%3E%3Ccircle cx=\'10\' cy=\'10\' r=\'3\' fill=\'%23fff\' fill-opacity=\'0.2\'/%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'4\' fill=\'%23fff\' fill-opacity=\'0.2\'/%3E%3C/svg%3E")', backgroundSize: '60px 60px' }} />
-        <div className="relative flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-white">Let's Play Buddy</h1>
-            <p className="text-xs text-green-100 mt-0.5">Find partners, plan tee times together</p>
-          </div>
+        <div className="relative flex flex-col items-center text-center">
+          <h1 className="text-xl font-bold text-white">Let's Play Buddy</h1>
+          <p className="text-xs text-green-100 mt-0.5">Find partners, plan tee times together</p>
         </div>
         <div className="relative mt-4">
           {needsAvailability && (
