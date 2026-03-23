@@ -17,6 +17,7 @@ import {
   Pencil,
   Check,
   Bot,
+  Mic,
 } from "lucide-react";
 import { useDragReorder } from "../hooks/useDragReorder";
 import { Storage } from "../utils/storage";
@@ -407,6 +408,40 @@ export default function Home() {
             </div>
 
             {/* Arrow */}
+            <ChevronRight size={22} className="text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all" />
+          </div>
+        </button>
+      </div>
+
+      {/* Hey Caddie — Senior Assistant Hero Card */}
+      <div className="px-4 mb-4">
+        <button
+          onClick={() => navigate("/hey-caddie")}
+          className="relative w-full overflow-hidden rounded-2xl shadow-2xl group active:scale-[0.98] transition-transform"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-600 opacity-90" />
+          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-white/10" />
+
+          <div className="absolute top-3 right-8 w-2 h-2 bg-white/20 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+          <div className="absolute bottom-2 left-10 w-1.5 h-1.5 bg-white/25 rounded-full animate-bounce" style={{ animationDelay: "0.7s" }} />
+
+          <div className="relative z-10 flex items-center gap-4 px-5 py-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center border border-white/30 shadow-lg group-hover:scale-110 transition-transform">
+              <Mic size={30} className="text-white drop-shadow-lg" />
+            </div>
+            <div className="flex-1 text-left">
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-extrabold text-white tracking-tight">
+                  Hey Caddie
+                </h3>
+                <span className="px-2 py-0.5 bg-white/20 rounded-full text-[10px] font-bold text-white uppercase tracking-wider">
+                  Voice AI
+                </span>
+              </div>
+              <p className="text-white/90 text-xs font-medium mt-0.5">
+                SOS, rides, tee times & buddies — just speak!
+              </p>
+            </div>
             <ChevronRight size={22} className="text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all" />
           </div>
         </button>

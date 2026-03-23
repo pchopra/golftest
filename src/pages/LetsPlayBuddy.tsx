@@ -12,7 +12,7 @@ import {
   ChevronRight, Plus, Check, Star, DollarSign, ArrowLeft,
   UserCheck, Users2, Filter, Flame, BarChart3, Car, Eye, Phone,
   Settings, Trash2, LogOut, Shield, UserPlus, UserMinus, X,
-  Search, ExternalLink,
+  Search, ExternalLink, Mic,
 } from 'lucide-react';
 
 type MainTab = 'buddies' | 'chat';
@@ -1033,6 +1033,27 @@ export default function LetsPlayBuddy() {
             )}
           </button>
         </div>
+
+        {/* Hey Caddie — Senior Assistant Tile */}
+        <button
+          onClick={() => navigate('/hey-caddie')}
+          className="relative w-full mt-3 overflow-hidden rounded-xl shadow-lg group active:scale-[0.98] transition-transform"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500" />
+          <div className="relative z-10 flex items-center gap-3 px-4 py-3.5">
+            <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center border border-white/30 flex-shrink-0">
+              <Mic size={22} className="text-white" />
+            </div>
+            <div className="flex-1 text-left">
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-extrabold text-white tracking-tight">Hey Caddie</h3>
+                <span className="px-1.5 py-0.5 bg-white/20 rounded-full text-[9px] font-bold text-white uppercase tracking-wider">Voice AI</span>
+              </div>
+              <p className="text-white/90 text-[11px] font-medium mt-0.5">SOS, rides, tee times & more — just speak!</p>
+            </div>
+            <ChevronRight size={18} className="text-white/60" />
+          </div>
+        </button>
       </div>
 
       <div className="px-4">

@@ -17,6 +17,7 @@ import GolfVideos from './pages/GolfVideos';
 import GolfPodcasts from './pages/GolfPodcasts';
 import RoboBuddy from './pages/RoboBuddy';
 import Notifications from './pages/Notifications';
+import SeniorAssistant from './pages/SeniorAssistant';
 import ToastContainer from './components/Toast';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="/podcasts" element={<GolfPodcasts />} />
             <Route path="/robobuddy" element={<RoboBuddy />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/hey-caddie" element={<SeniorAssistant />} />
           </Routes>
           <ToastContainer />
           <BottomTabBar />
