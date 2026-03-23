@@ -542,11 +542,20 @@ export default function LetsPlayBuddy() {
                   : 'No courses found in our list'}
               </p>
             )}
+            {prefCourse && (
+              <div className="flex items-center gap-2 mb-2 px-3 py-2 rounded-xl bg-golf-50 border border-golf-600">
+                <Check size={14} className="text-golf-600 shrink-0" />
+                <span className="text-sm font-medium text-golf-800 flex-1 truncate">{getCourseName(prefCourse)}</span>
+                <button onClick={() => setPrefCourse('')} className="p-0.5 rounded-full hover:bg-golf-200 transition-colors">
+                  <X size={14} className="text-golf-600" />
+                </button>
+              </div>
+            )}
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {filteredCourseList.map(c => (
                 <button
                   key={c.id}
-                  onClick={() => setPrefCourse(prev => prev === c.id ? '' : c.id)}
+                  onClick={() => setPrefCourse(prefCourse === c.id ? '' : c.id)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all ${
                     prefCourse === c.id
                       ? 'border-golf-600 bg-golf-50'
@@ -557,7 +566,7 @@ export default function LetsPlayBuddy() {
                     <p className="text-sm font-medium text-gray-900">{c.name}</p>
                     <p className="text-xs text-gray-500">{c.city}, {c.state} · {c.distance} mi</p>
                   </div>
-                  {prefCourse === c.id && <Check size={16} className="text-golf-600" />}
+                  {prefCourse === c.id && <X size={16} className="text-golf-600" />}
                 </button>
               ))}
               {/* Google fallback banner — selectable as preferred course */}
@@ -566,7 +575,7 @@ export default function LetsPlayBuddy() {
                 const isSelected = prefCourse === customId;
                 return (
                   <div
-                    onClick={() => setPrefCourse(prev => prev === customId ? '' : customId)}
+                    onClick={() => setPrefCourse(prefCourse === customId ? '' : customId)}
                     className={`bg-white rounded-2xl shadow-sm border overflow-hidden cursor-pointer transition-all ${
                       isSelected ? 'border-golf-600 ring-2 ring-golf-200' : 'border-gray-100'
                     }`}
