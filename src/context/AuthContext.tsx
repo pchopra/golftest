@@ -318,8 +318,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         Storage.get(STORAGE_KEYS.weekendPolls),
       ]);
       if (user && !session) setCurrentUser(JSON.parse(user));
-      if (users) setAllUsers(JSON.parse(users));
-      if (avail) setAvailability(JSON.parse(avail));
+      // Only hydrate from cache when there's no active session;
+      // otherwise fresh Supabase data (loaded via loadAllBuddies) takes precedence.
+      if (!session) {
+        if (users) setAllUsers(JSON.parse(users));
+        if (avail) setAvailability(JSON.parse(avail));
+      }
       if (groups) setChatGroups(JSON.parse(groups));
       if (polls) setWeekendPolls(JSON.parse(polls));
     }

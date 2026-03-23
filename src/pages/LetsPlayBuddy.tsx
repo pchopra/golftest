@@ -68,6 +68,19 @@ export default function LetsPlayBuddy() {
   const [courseSearchQuery, setCourseSearchQuery] = useState('');
   const [courseSearchActive, setCourseSearchActive] = useState('');
 
+  // Pre-populate form with existing availability when opening the sheet
+  useEffect(() => {
+    if (showSetAvailability) {
+      const existing = getMyAvailability();
+      if (existing) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        setSelDates(existing.availableDates.filter(d => d >= todayStr));
+        setSelTimes(existing.availableTimes);
+        setPrefCourse(existing.preferredCourseId);
+      }
+    }
+  }, [showSetAvailability]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Create group state
   const [groupName, setGroupName] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
