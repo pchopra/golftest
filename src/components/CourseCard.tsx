@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Star, MapPin, Flag } from 'lucide-react';
 import type { GolfCourse } from '../data/mockCourses';
+import { getCourseImageUrl } from '../data/courseImages';
 
 interface Props {
   course: GolfCourse;
@@ -8,14 +10,25 @@ interface Props {
 }
 
 export default function CourseCard({ course, distance, onSelect }: Props) {
+  const [imgError, setImgError] = useState(false);
+
   return (
     <div
       onClick={() => onSelect(course)}
       className="mx-4 mb-3 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden active:scale-[0.98] transition-transform cursor-pointer"
     >
-      {/* Gradient header with golf icon */}
-      <div className={`h-28 bg-gradient-to-br ${course.imageGradient} relative flex items-center justify-center`}>
-        <Flag size={40} className="text-white/30" />
+      {/* Course banner image with gradient fallback */}
+      <div className={`h-28 relative ${imgError ? `bg-gradient-to-br ${course.imageGradient} flex items-center justify-center` : ''}`}>
+        {!imgError ? (
+          <img
+            src={getCourseImageUrl(course.id)}
+            alt={course.name}
+            className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <Flag size={40} className="text-white/30" />
+        )}
         <div className="absolute top-3 right-3 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full">
           {course.priceRange}
         </div>

@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { X, Star, Phone, Globe, Navigation, Flag, Clock } from 'lucide-react';
 import type { GolfCourse } from '../data/mockCourses';
+import { getCourseImageUrl } from '../data/courseImages';
 
 interface Props {
   course: GolfCourse;
@@ -8,6 +10,7 @@ interface Props {
 }
 
 export default function CourseDetailSheet({ course, distance, onClose }: Props) {
+  const [imgError, setImgError] = useState(false);
   return (
     <div className="fixed inset-0 z-[60]" onClick={onClose}>
       {/* Backdrop */}
@@ -31,9 +34,18 @@ export default function CourseDetailSheet({ course, distance, onClose }: Props) 
           <X size={18} className="text-gray-600" />
         </button>
 
-        {/* Header gradient */}
-        <div className={`mx-4 mt-2 h-36 bg-gradient-to-br ${course.imageGradient} rounded-2xl flex items-center justify-center relative`}>
-          <Flag size={48} className="text-white/30" />
+        {/* Header image with gradient fallback */}
+        <div className={`mx-4 mt-2 h-36 rounded-2xl overflow-hidden relative ${imgError ? `bg-gradient-to-br ${course.imageGradient} flex items-center justify-center` : ''}`}>
+          {!imgError ? (
+            <img
+              src={getCourseImageUrl(course.id)}
+              alt={course.name}
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <Flag size={48} className="text-white/30" />
+          )}
           <div className="absolute bottom-3 left-3 bg-white/20 backdrop-blur-sm text-white text-sm font-bold px-3 py-1 rounded-full">
             {course.priceRange}
           </div>
