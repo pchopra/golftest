@@ -5,6 +5,7 @@ import { mockCourses, type GolfCourse } from '../data/mockCourses';
 import { hotDeals } from '../data/hotDeals';
 import { getCoordinatesForZip } from '../data/zipCoordinates';
 import { getDistanceMiles } from '../utils/distance';
+import { matchesState } from '../utils/stateNames';
 import CourseCard from '../components/CourseCard';
 import CourseDetailSheet from '../components/CourseDetailSheet';
 import LocationPrompt from '../components/LocationPrompt';
@@ -81,7 +82,8 @@ export default function FindCourses() {
     if (nameFilter) {
       filtered = filtered.filter(({ course }) =>
         course.name.toLowerCase().includes(nameFilter) ||
-        course.city.toLowerCase().includes(nameFilter)
+        course.city.toLowerCase().includes(nameFilter) ||
+        matchesState(course.state, nameFilter)
       );
     } else if (effectiveLat && effectiveLng && radiusFilter) {
       // Filter by radius when any location is available

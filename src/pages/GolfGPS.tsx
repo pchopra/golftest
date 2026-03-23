@@ -16,6 +16,7 @@ import {
   Navigation,
 } from "lucide-react";
 import { mockCourses, type GolfCourse } from "../data/mockCourses";
+import { matchesState } from "../utils/stateNames";
 
 /* ------------------------------------------------------------------ */
 /*  Generate 18 holes of data from a course's par / yardage           */
@@ -89,7 +90,7 @@ function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void })
       (c) =>
         c.name.toLowerCase().includes(q) ||
         c.city.toLowerCase().includes(q) ||
-        c.state.toLowerCase().includes(q)
+        matchesState(c.state, q)
     );
   }, [query]);
 
