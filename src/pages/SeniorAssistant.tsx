@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Mic, MicOff, Phone, Car, Calendar, Users, MessageCircle,
@@ -18,36 +18,37 @@ interface AssistantAction {
 // ─── Voice Command Hook ───
 function useVoiceCommand(onResult: (text: string) => void) {
   const [listening, setListening] = useState(false);
-  const [supported, setSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const onResultRef = useRef(onResult);
+  onResultRef.current = onResult;
 
-  useEffect(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    setSupported(!!SR);
-    if (SR) {
+  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  const supported = !!SR;
+
+  const toggle = () => {
+    if (!supported) return;
+    if (listening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      setListening(false);
+    } else {
+      // Create a fresh instance each time to avoid stale-object issues
       const recognition = new SR();
       recognition.continuous = false;
       recognition.interimResults = false;
       recognition.lang = 'en-US';
+      recognition.maxAlternatives = 1;
       recognition.onresult = (event: any) => {
         const text = event.results[0][0].transcript;
-        onResult(text);
-        setListening(false);
+        onResultRef.current(text);
       };
       recognition.onerror = () => setListening(false);
-      recognition.onend = () => setListening(false);
+      recognition.onend = () => {
+        recognitionRef.current = null;
+        setListening(false);
+      };
       recognitionRef.current = recognition;
-    }
-    return () => { recognitionRef.current?.abort(); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const toggle = () => {
-    if (!recognitionRef.current) return;
-    if (listening) {
-      recognitionRef.current.stop();
-      setListening(false);
-    } else {
-      recognitionRef.current.start();
+      recognition.start();
       setListening(true);
     }
   };
