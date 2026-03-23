@@ -71,6 +71,12 @@ body {
   100% { background-position: -200% 0; }
 }
 
+.animate-shimmer {
+  background: linear-gradient(90deg, #f59e0b, #ea580c, #f59e0b, #f59e0b);
+  background-size: 300% 100%;
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }

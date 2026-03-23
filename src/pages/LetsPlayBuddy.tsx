@@ -135,11 +135,12 @@ export default function LetsPlayBuddy() {
   // Determine if the "Set Availability" button should pulse to grab attention.
   // Pulse when: no availability set, or all selected dates are in the past.
   const needsAvailability = useMemo(() => {
-    const myAvail = getMyAvailability();
+    if (!currentUser) return false;
+    const myAvail = availability.find(a => a.userId === currentUser.id);
     if (!myAvail || myAvail.availableDates.length === 0) return true;
     const today = new Date().toISOString().split('T')[0];
     return myAvail.availableDates.every(d => d < today);
-  }, [getMyAvailability]);
+  }, [currentUser, availability]);
 
   // Early returns AFTER all hooks
   if (loading) {
@@ -991,14 +992,14 @@ export default function LetsPlayBuddy() {
         </div>
         <div className="relative mt-4">
           {needsAvailability && (
-            <div className="absolute -inset-1 rounded-2xl bg-amber-400 animate-pulse opacity-60" />
+            <div className="absolute -inset-1 rounded-2xl bg-amber-400 animate-pulse opacity-50" />
           )}
           <button
             onClick={() => setShowSetAvailability(true)}
-            className={`relative w-full rounded-xl text-white text-sm font-bold shadow-sm flex flex-col items-center justify-center gap-1 transition-colors ${
+            className={`relative w-full py-3 rounded-xl text-white text-sm font-bold shadow-sm flex flex-col items-center justify-center gap-1 transition-colors ${
               needsAvailability
-                ? 'py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 bg-[length:200%_100%] animate-[shimmer_2s_ease-in-out_infinite] hover:from-amber-600 hover:via-orange-600 hover:to-amber-600'
-                : 'py-3 bg-amber-500 hover:bg-amber-600'
+                ? 'animate-shimmer hover:brightness-110'
+                : 'bg-amber-500 hover:bg-amber-600'
             }`}
           >
             <span className="flex items-center gap-2">
