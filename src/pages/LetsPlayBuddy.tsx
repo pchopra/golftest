@@ -132,6 +132,15 @@ export default function LetsPlayBuddy() {
     );
   }, [courseSearchActive, nearest5, allCoursesWithDistance]);
 
+  // Determine if the "Set Availability" button should pulse to grab attention.
+  // Pulse when: no availability set, or all selected dates are in the past.
+  const needsAvailability = useMemo(() => {
+    const myAvail = getMyAvailability();
+    if (!myAvail || myAvail.availableDates.length === 0) return true;
+    const today = new Date().toISOString().split('T')[0];
+    return myAvail.availableDates.every(d => d < today);
+  }, [getMyAvailability]);
+
   // Early returns AFTER all hooks
   if (loading) {
     return (
@@ -184,15 +193,6 @@ export default function LetsPlayBuddy() {
   const getUserById = (id: string) => allUsers.find(u => u.id === id);
   const getCourseName = (id: string) =>
     id.startsWith('custom:') ? id.slice(7) : (mockCourses.find(c => c.id === id)?.name || 'Unknown');
-
-  // Determine if the "Set Availability" button should pulse to grab attention.
-  // Pulse when: no availability set, or all selected dates are in the past.
-  const needsAvailability = useMemo(() => {
-    const myAvail = getMyAvailability();
-    if (!myAvail || myAvail.availableDates.length === 0) return true;
-    const today = new Date().toISOString().split('T')[0];
-    return myAvail.availableDates.every(d => d < today);
-  }, [getMyAvailability]);
 
   // Compute available buddies with their availability and distance
   const buddiesWithAvail = otherUsers.map(user => {
