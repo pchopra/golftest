@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, UserPlus, Loader2 } from 'lucide-react';
+import { LogIn, UserPlus, Loader2, Pencil, Save, X } from 'lucide-react';
 import { getCoordinatesForZip } from '../data/zipCoordinates';
 import type { SkillLevel, Gender } from '../data/mockUsers';
 import Avatar from '../components/Avatar';
@@ -11,7 +11,7 @@ export default function Login() {
   const {
     login, register, loginWithSupabase, registerWithSupabase,
     currentUser, allUsers, session, loading: authLoading, logout,
-    updateProfilePicture,
+    updateProfilePicture, updateProfile,
   } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<Tab>('login');
@@ -153,6 +153,56 @@ export default function Login() {
     setSuccessMsg('Account created successfully!');
   };
 
+  // --- Profile edit state ---
+  const [editing, setEditing] = useState(false);
+  const [editFirst, setEditFirst] = useState('');
+  const [editLast, setEditLast] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editSkill, setEditSkill] = useState<SkillLevel>('Beginner');
+  const [editGender, setEditGender] = useState<Gender>('Prefer not to say');
+  const [editStreet, setEditStreet] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editState, setEditState] = useState('');
+  const [editZip, setEditZip] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const startEditing = () => {
+    if (!currentUser) return;
+    setEditFirst(currentUser.firstName);
+    setEditLast(currentUser.lastName);
+    setEditPhone(currentUser.phone);
+    setEditSkill(currentUser.skillLevel);
+    setEditGender(currentUser.gender);
+    // Try to split address back into parts
+    const parts = (currentUser.address || '').split(', ');
+    setEditStreet(parts[0] || '');
+    setEditCity(parts[1] || '');
+    const stateZip = (parts[2] || '').split(' ');
+    setEditState(stateZip[0] || '');
+    setEditZip(stateZip[1] || '');
+    setEditing(true);
+  };
+
+  const cancelEditing = () => setEditing(false);
+
+  const saveProfile = async () => {
+    if (!currentUser) return;
+    setSaving(true);
+    const fullAddress = [editStreet, editCity, [editState, editZip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    const coords = getCoordinatesForZip(editZip);
+    await updateProfile({
+      firstName: editFirst.trim(),
+      lastName: editLast.trim(),
+      phone: editPhone.trim(),
+      skillLevel: editSkill,
+      gender: editGender,
+      address: fullAddress,
+      ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
+    });
+    setSaving(false);
+    setEditing(false);
+  };
+
   // If already logged in, show profile
   if (currentUser) {
     return (
@@ -170,7 +220,6 @@ export default function Login() {
                 alert('Image must be under 5 MB');
                 return;
               }
-              // Compress and resize image to keep the stored data small
               const img = new Image();
               img.onload = () => {
                 const MAX = 256;
@@ -189,6 +238,8 @@ export default function Login() {
               e.target.value = '';
             }}
           />
+
+          {/* Header with avatar */}
           <div className="flex items-center gap-4 mb-6">
             <Avatar
               firstName={currentUser.firstName}
@@ -198,7 +249,7 @@ export default function Login() {
               editable
               onEdit={() => fileInputRef.current?.click()}
             />
-            <div>
+            <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900">
                 {currentUser.firstName} {currentUser.lastName}
               </h2>
@@ -210,34 +261,114 @@ export default function Login() {
                 </span>
               )}
             </div>
+            {!editing && (
+              <button onClick={startEditing} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Edit Profile">
+                <Pencil size={18} className="text-gray-500" />
+              </button>
+            )}
           </div>
 
-          <div className="space-y-3 mb-6">
-            {currentUser.phone && (
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-500">Phone</span>
-                <span className="text-sm font-medium text-gray-900">{currentUser.phone}</span>
+          {editing ? (
+            /* ---------- Edit mode ---------- */
+            <div className="space-y-4 mb-6">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">First Name</label>
+                  <input value={editFirst} onChange={e => setEditFirst(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-golf-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Last Name</label>
+                  <input value={editLast} onChange={e => setEditLast(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-golf-500 focus:border-transparent" />
+                </div>
               </div>
-            )}
-            <div className="flex justify-between py-2 border-b border-gray-100">
-              <span className="text-sm text-gray-500">Skill Level</span>
-              <span className="text-sm font-medium text-gray-900">{currentUser.skillLevel}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-gray-100">
-              <span className="text-sm text-gray-500">Gender</span>
-              <span className="text-sm font-medium text-gray-900">{currentUser.gender}</span>
-            </div>
-            {currentUser.address && (
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-500">Location</span>
-                <span className="text-sm font-medium text-gray-900 text-right max-w-[200px]">{currentUser.address}</span>
+
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Phone</label>
+                <input value={editPhone} onChange={e => setEditPhone(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-golf-500 focus:border-transparent" placeholder="(555) 123-4567" />
               </div>
-            )}
-            <div className="flex justify-between py-2">
-              <span className="text-sm text-gray-500">Member Since</span>
-              <span className="text-sm font-medium text-gray-900">{currentUser.createdAt}</span>
+
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Skill Level</label>
+                <div className="flex flex-wrap gap-2">
+                  {skillLevels.map(level => (
+                    <button key={level} onClick={() => setEditSkill(level)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${editSkill === level ? 'bg-golf-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Gender</label>
+                <div className="flex flex-wrap gap-2">
+                  {genders.map(g => (
+                    <button key={g} onClick={() => setEditGender(g)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${editGender === g ? 'bg-golf-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Address</label>
+                <input value={editStreet} onChange={e => setEditStreet(e.target.value)} placeholder="Street"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-2 focus:ring-2 focus:ring-golf-500 focus:border-transparent" />
+                <div className="grid grid-cols-3 gap-2">
+                  <input value={editCity} onChange={e => setEditCity(e.target.value)} placeholder="City"
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-golf-500 focus:border-transparent" />
+                  <input value={editState} onChange={e => setEditState(e.target.value)} placeholder="State" maxLength={2}
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm uppercase focus:ring-2 focus:ring-golf-500 focus:border-transparent" />
+                  <input value={editZip} onChange={e => setEditZip(e.target.value)} placeholder="ZIP"
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-golf-500 focus:border-transparent" />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button onClick={cancelEditing}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                  <X size={16} /> Cancel
+                </button>
+                <button onClick={saveProfile} disabled={saving}
+                  className="flex-1 py-2.5 rounded-xl bg-golf-600 text-white font-semibold text-sm hover:bg-golf-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                  {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* ---------- View mode ---------- */
+            <div className="space-y-3 mb-6">
+              {currentUser.phone && (
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-500">Phone</span>
+                  <span className="text-sm font-medium text-gray-900">{currentUser.phone}</span>
+                </div>
+              )}
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Skill Level</span>
+                <span className="text-sm font-medium text-gray-900">{currentUser.skillLevel}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Gender</span>
+                <span className="text-sm font-medium text-gray-900">{currentUser.gender}</span>
+              </div>
+              {currentUser.address && (
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-500">Location</span>
+                  <span className="text-sm font-medium text-gray-900 text-right max-w-[200px]">{currentUser.address}</span>
+                </div>
+              )}
+              <div className="flex justify-between py-2">
+                <span className="text-sm text-gray-500">Member Since</span>
+                <span className="text-sm font-medium text-gray-900">{currentUser.createdAt}</span>
+              </div>
+            </div>
+          )}
 
           <button
             onClick={() => logout()}

@@ -31,6 +31,7 @@ interface AuthContextType {
   createWeekendPoll: (groupId: string, customDates?: string[], customTimes?: string[]) => WeekendPoll;
   voteOnPoll: (pollId: string, vote: Omit<PollVote, 'userId'>) => void;
   updateProfilePicture: (dataUrl: string) => Promise<void> | void;
+  updateProfile: (fields: Partial<Pick<User, 'firstName' | 'lastName' | 'phone' | 'skillLevel' | 'gender' | 'address' | 'lat' | 'lng'>>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -424,6 +425,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateProfile = async (fields: Partial<Pick<User, 'firstName' | 'lastName' | 'phone' | 'skillLevel' | 'gender' | 'address' | 'lat' | 'lng'>>) => {
+    if (!currentUser) return;
+    const updated = { ...currentUser, ...fields };
+    setCurrentUser(updated);
+    setAllUsers(prev => prev.map(u => u.id === currentUser.id ? updated : u));
+
+    if (session) {
+      const dbFields: Record<string, unknown> = {};
+      if (fields.firstName !== undefined) dbFields.first_name = fields.firstName;
+      if (fields.lastName !== undefined) dbFields.last_name = fields.lastName;
+      if (fields.phone !== undefined) dbFields.phone = fields.phone;
+      if (fields.skillLevel !== undefined) dbFields.skill_level = fields.skillLevel;
+      if (fields.gender !== undefined) dbFields.gender = fields.gender;
+      if (fields.address !== undefined) dbFields.address = fields.address;
+      if (fields.lat !== undefined) dbFields.lat = fields.lat;
+      if (fields.lng !== undefined) dbFields.lng = fields.lng;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(dbFields)
+        .eq('id', currentUser.id);
+      if (error) {
+        console.error('[GolfBuddy] Profile update failed:', error.message);
+      }
+    }
+  };
+
   const setMyAvailability = (avail: Omit<BuddyAvailability, 'userId'>) => {
     if (!currentUser) return;
     const newAvail: BuddyAvailability = { ...avail, userId: currentUser.id };
@@ -624,7 +652,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register, logout,
       setMyAvailability, getMyAvailability, toggleFreeNow,
       createChatGroup, deleteGroup, addGroupMember, removeGroupMember, makeGroupAdmin, leaveGroup, sendMessage,
-      createWeekendPoll, voteOnPoll, updateProfilePicture,
+      createWeekendPoll, voteOnPoll, updateProfilePicture, updateProfile,
     }}>
       {children}
     </AuthContext.Provider>
