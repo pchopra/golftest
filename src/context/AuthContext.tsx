@@ -185,12 +185,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [buildFallbackUser]);
 
+  // Fetch all profiles + availability from Supabase so other users' buddies are visible
+  const loadAllBuddies = useCallback(async () => {
+    try {
+      const [{ data: profiles }, { data: availRows }] = await Promise.all([
+        supabase.from('profiles').select('*'),
+        supabase.from('buddy_availability').select('*'),
+      ]);
+
+      if (profiles && profiles.length > 0) {
+        const supaUsers = profiles.map((p: Record<string, unknown>) => profileToUser(p));
+        setAllUsers(prev => {
+          // Merge: Supabase profiles take precedence, keep mock users that don't collide
+          const supaIds = new Set(supaUsers.map((u: User) => u.id));
+          const kept = prev.filter(u => !supaIds.has(u.id));
+          return [...kept, ...supaUsers];
+        });
+      }
+
+      if (availRows && availRows.length > 0) {
+        const supaAvail: BuddyAvailability[] = availRows.map((r: Record<string, unknown>) => ({
+          userId: r.user_id as string,
+          availableDates: (r.available_dates as string[]) || [],
+          availableTimes: (r.available_times as string[]) || [],
+          preferredCourseId: (r.preferred_course_id as string) || '',
+          alternateCourseIds: (r.alternate_course_ids as string[]) || [],
+          needsRide: (r.needs_ride as boolean) || false,
+          canOfferRide: (r.can_offer_ride as boolean) || false,
+          rideNote: (r.ride_note as string) || '',
+          isFreeNow: (r.is_free_now as boolean) || false,
+          freeNowUntil: (r.free_now_until as string) || undefined,
+        }));
+        setAvailability(prev => {
+          const supaUserIds = new Set(supaAvail.map(a => a.userId));
+          const kept = prev.filter(a => !supaUserIds.has(a.userId));
+          return [...kept, ...supaAvail];
+        });
+      }
+    } catch (err) {
+      console.error('[GolfBuddy] Failed to load buddies from Supabase:', err);
+    }
+  }, []);
+
   // Listen for Supabase auth changes
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       setSession(s);
       if (s?.user) {
         try { await loadSupabaseProfile(s.user.id); } catch (e) { console.error('[GolfBuddy] getSession profile load failed:', e); }
+        // Fetch all profiles + availability so buddy list is up to date
+        loadAllBuddies();
       }
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -204,7 +248,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [loadSupabaseProfile]);
+  }, [loadSupabaseProfile, loadAllBuddies]);
 
   // Hydrate from native storage on mount (async)
   useEffect(() => {
@@ -293,8 +337,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     console.log('[GolfBuddy] signUp success, user:', data.user?.id, 'session:', !!data.session);
 
-    // Profile is created automatically by the handle_new_user() DB trigger
-    // which reads all fields from raw_user_meta_data (runs as security definer)
+    // Ensure the profile row exists (DB trigger may not fire in all environments)
+    if (data.user) {
+      const profileRow = {
+        id: data.user.id,
+        first_name: meta.firstName,
+        last_name: meta.lastName,
+        email,
+        phone: meta.phone || '',
+        skill_level: meta.skillLevel || 'Beginner',
+        gender: meta.gender || 'Prefer not to say',
+        address: meta.address || '',
+        lat: meta.lat ?? 37.7749,
+        lng: meta.lng ?? -122.4194,
+      };
+      const { error: upsertErr } = await supabase
+        .from('profiles')
+        .upsert(profileRow, { onConflict: 'id' });
+      if (upsertErr) {
+        console.error('[GolfBuddy] Profile upsert after signup failed:', upsertErr.message);
+      }
+
+      // Load the new user's profile + refresh buddy list for this session
+      if (data.session) {
+        setSession(data.session);
+        await loadSupabaseProfile(data.user.id);
+      }
+      loadAllBuddies();
+    }
+
     return { error: null };
   };
 
