@@ -1022,9 +1022,9 @@ export default function LetsPlayBuddy() {
                 : 'bg-amber-500 hover:bg-amber-600'
             }`}
           >
-            <span className="flex items-center gap-2">
-              <Calendar size={16} />
-              Set Availability
+            <span className="flex items-center gap-2 text-base">
+              <Calendar size={18} />
+              Set Your Availability
             </span>
             {needsAvailability && (
               <span className="text-[11px] font-medium text-amber-100">
