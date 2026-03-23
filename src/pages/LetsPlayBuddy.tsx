@@ -10,7 +10,7 @@ import type { BuddyAvailability, User, ChatGroup, WeekendPoll } from '../data/mo
 import {
   Calendar, Clock, MapPin, Users, MessageCircle, Send,
   ChevronRight, Plus, Check, Star, ArrowLeft, Sparkles,
-  UserCheck, Users2, Filter, Flame, BarChart3, Car, Eye, Phone,
+  UserCheck, Users2, Filter, Flame, BarChart3, Eye, Phone,
   Settings, Trash2, LogOut, Shield, UserPlus, UserMinus, X,
   Search, ExternalLink, Mic, Globe, Bell,
 } from 'lucide-react';
@@ -1607,10 +1607,10 @@ function AvailabilityResults({
 
 // ——— Weekend Poll Panel Component ———
 function WeekendPollPanel({
-  group, polls, currentUserId, getUserById, formatDate, availability: _availability,
-  onCreatePoll, onVote, onGroupChat, onGroupCall,
-  pollSelDates, setPollSelDates, pollSelTimes, setPollSelTimes,
-  pollNeedsRide, setPollNeedsRide, pollCanOffer, setPollCanOffer,
+  group, polls: _polls, currentUserId: _currentUserId, getUserById, formatDate, availability,
+  onCreatePoll: _onCreatePoll, onVote: _onVote, onGroupChat: _onGroupChat, onGroupCall: _onGroupCall,
+  pollSelDates: _pollSelDates, setPollSelDates: _setPollSelDates, pollSelTimes: _pollSelTimes, setPollSelTimes: _setPollSelTimes,
+  pollNeedsRide: _pollNeedsRide, setPollNeedsRide: _setPollNeedsRide, pollCanOffer: _pollCanOffer, setPollCanOffer: _setPollCanOffer,
 }: {
   group: ChatGroup;
   polls: WeekendPoll[];
@@ -1627,267 +1627,144 @@ function WeekendPollPanel({
   pollNeedsRide: boolean; setPollNeedsRide: (v: boolean) => void;
   pollCanOffer: boolean; setPollCanOffer: (v: boolean) => void;
 }) {
-  const openPolls = polls.filter(p => p.status === 'open');
-  const [showNewPoll, setShowNewPoll] = useState(false);
-  const [newPollDates, setNewPollDates] = useState<string[]>([]);
-  const [newPollTimes, setNewPollTimes] = useState<string[]>([]);
-  const [newPollMessage, setNewPollMessage] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const formatTimeRaw = (raw: string) => {
-    const [h, m] = raw.split(':').map(Number);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 || 12;
-    return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+  // Generate next 6 weekend dates (3 weekends: Sat + Sun each)
+  const weekendDates = useMemo(() => {
+    const dates: string[] = [];
+    const today = new Date();
+    const d = new Date(today);
+    // Move to next Saturday
+    d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7 || 7));
+    for (let i = 0; i < 3; i++) {
+      const sat = new Date(d);
+      sat.setDate(d.getDate() + i * 7);
+      const sun = new Date(sat);
+      sun.setDate(sat.getDate() + 1);
+      dates.push(sat.toISOString().split('T')[0]);
+      dates.push(sun.toISOString().split('T')[0]);
+    }
+    return dates;
+  }, []);
+
+  // Get group member availability for the selected date
+  const membersForDate = useMemo(() => {
+    if (!selectedDate) return [];
+    return group.memberIds.map(memberId => {
+      const user = getUserById(memberId);
+      const avail = availability.find(a => a.userId === memberId);
+      const isAvailable = avail?.availableDates?.includes(selectedDate) || false;
+      const times = isAvailable ? (avail?.availableTimes || []) : [];
+      return { user, avail, isAvailable, times };
+    }).filter(m => m.user);
+  }, [selectedDate, group.memberIds, availability, getUserById]);
+
+  const availableCount = membersForDate.filter(m => m.isAvailable).length;
+
+  const getDayLabel = (iso: string) => {
+    const d = new Date(iso + 'T12:00:00');
+    return d.getDay() === 0 ? 'Sun' : 'Sat';
   };
 
   return (
-    <div className="px-4 py-3 bg-white border-b border-gray-100 max-h-[50vh] overflow-y-auto animate-fade-in shrink-0">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
-          <BarChart3 size={15} className="text-green-700" /> Weekend Polls
-        </h4>
-        <button
-          onClick={() => setShowNewPoll(!showNewPoll)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 transition-colors"
-        >
-          <Plus size={13} /> New Poll
-        </button>
-      </div>
+    <div className="px-4 py-3 bg-white border-b border-gray-100 max-h-[55vh] overflow-y-auto animate-fade-in shrink-0">
+      <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5 mb-1">
+        <BarChart3 size={15} className="text-green-700" /> Weekend Polls
+      </h4>
+      <p className="text-[11px] text-gray-500 mb-3">Pick a weekend date to see who's available</p>
 
-      {/* New Poll Creation Form */}
-      {showNewPoll && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 mb-3 animate-fade-in">
-          <p className="text-xs font-bold text-amber-800 mb-2">Create New Poll</p>
-
-          {/* Poll Dates */}
-          <div className="flex items-center gap-1.5 mb-1">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase">Dates</p>
-            <label
-              htmlFor="new-poll-date-picker"
-              className="ml-auto p-1 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
-              title="Add a date"
-            >
-              <Plus size={12} />
-            </label>
-            <input
-              id="new-poll-date-picker"
-              type="date"
-              style={{ position: 'fixed', top: '-200px', left: '-200px', opacity: 0 }}
-              tabIndex={-1}
-              min={new Date().toISOString().split('T')[0]}
-              onChange={(e) => {
-                const date = e.target.value;
-                if (date && !newPollDates.includes(date)) {
-                  setNewPollDates(prev => [...prev, date].sort());
-                }
-                e.target.value = '';
-              }}
-            />
-          </div>
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {newPollDates.length === 0 && <p className="text-[10px] text-gray-400 italic">Tap + to add dates (defaults to this weekend)</p>}
-            {newPollDates.map(date => (
-              <button
-                key={date}
-                onClick={() => setNewPollDates(prev => prev.filter(d => d !== date))}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-amber-600 text-white flex items-center gap-1"
-              >
-                {formatDate(date)} <X size={10} />
-              </button>
-            ))}
-          </div>
-
-          {/* Poll Times */}
-          <div className="flex items-center gap-1.5 mb-1">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase">Times</p>
-            <label
-              htmlFor="new-poll-time-picker"
-              className="ml-auto p-1 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
-              title="Add a time"
-            >
-              <Plus size={12} />
-            </label>
-            <input
-              id="new-poll-time-picker"
-              type="time"
-              style={{ position: 'fixed', top: '-200px', left: '-200px', opacity: 0 }}
-              tabIndex={-1}
-              onChange={(e) => {
-                const raw = e.target.value;
-                if (!raw) return;
-                const formatted = formatTimeRaw(raw);
-                if (!newPollTimes.includes(formatted)) {
-                  setNewPollTimes(prev => [...prev, formatted]);
-                }
-                e.target.value = '';
-              }}
-            />
-          </div>
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {newPollTimes.length === 0 && <p className="text-[10px] text-gray-400 italic">Tap + to add times (defaults to common tee times)</p>}
-            {newPollTimes.map(time => (
-              <button
-                key={time}
-                onClick={() => setNewPollTimes(prev => prev.filter(t => t !== time))}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-amber-600 text-white flex items-center gap-1"
-              >
-                {time} <X size={10} />
-              </button>
-            ))}
-          </div>
-
-          {/* Optional Message */}
-          <div className="mb-3">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Message (optional)</p>
-            <textarea
-              value={newPollMessage}
-              onChange={(e) => setNewPollMessage(e.target.value)}
-              placeholder="e.g. Who's up for 18 holes this weekend?"
-              rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-amber-200 bg-white text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
-            />
-          </div>
-
-          <div className="flex gap-2">
+      {/* Weekend date buttons - 2 columns (Sat | Sun) per weekend */}
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        {weekendDates.map(date => {
+          const dayLabel = getDayLabel(date);
+          const isSelected = selectedDate === date;
+          // Count available members for this date
+          const availCount = group.memberIds.filter(id => {
+            const a = availability.find(av => av.userId === id);
+            return a?.availableDates?.includes(date);
+          }).length;
+          return (
             <button
-              onClick={() => { setShowNewPoll(false); setNewPollDates([]); setNewPollTimes([]); setNewPollMessage(''); }}
-              className="flex-1 py-2 rounded-xl border border-gray-200 text-gray-600 text-xs font-semibold hover:bg-gray-50 transition-colors"
+              key={date}
+              onClick={() => setSelectedDate(isSelected ? null : date)}
+              className={`px-3 py-2.5 rounded-xl text-left transition-all active:scale-[0.97] ${
+                isSelected
+                  ? 'bg-green-700 text-white shadow-md'
+                  : 'bg-gray-50 border border-gray-200 text-gray-800 hover:border-green-300 hover:bg-green-50'
+              }`}
             >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                onCreatePoll(
-                  newPollDates.length > 0 ? newPollDates : undefined,
-                  newPollTimes.length > 0 ? newPollTimes : undefined,
-                  newPollMessage.trim() || undefined,
-                );
-                setShowNewPoll(false); setNewPollDates([]); setNewPollTimes([]); setNewPollMessage('');
-              }}
-              className="flex-1 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors"
-            >
-              Create Poll
-            </button>
-          </div>
-        </div>
-      )}
-
-      {openPolls.length === 0 && !showNewPoll ? (
-        <p className="text-xs text-gray-400 text-center py-4">No polls yet. Create one to plan your weekend round!</p>
-      ) : (
-        <div className="space-y-4">
-          {openPolls.map(poll => {
-            const myVote = poll.votes.find(v => v.userId === currentUserId);
-            const creator = getUserById(poll.createdBy);
-            return (
-              <div key={poll.id} className="rounded-xl border border-green-200 bg-green-50 p-3">
-                <p className="text-xs font-semibold text-green-800 mb-2">
-                  Weekend of {formatDate(poll.weekendDate)} · by {creator?.firstName || 'Unknown'}
-                </p>
-
-                {/* Date options */}
-                <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Pick Dates</p>
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {poll.dateOptions.map(date => {
-                    const voteCount = poll.votes.filter(v => v.selectedDates.includes(date)).length;
-                    const selected = pollSelDates.includes(date);
-                    return (
-                      <button
-                        key={date}
-                        onClick={() => setPollSelDates(selected ? pollSelDates.filter(d => d !== date) : [...pollSelDates, date])}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${selected ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-700'}`}
-                      >
-                        {formatDate(date)} <span className="opacity-60">({voteCount})</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Time options */}
-                <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Pick Times</p>
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {poll.timeOptions.map(time => {
-                    const voteCount = poll.votes.filter(v => v.selectedTimes.includes(time)).length;
-                    const selected = pollSelTimes.includes(time);
-                    return (
-                      <button
-                        key={time}
-                        onClick={() => setPollSelTimes(selected ? pollSelTimes.filter(t => t !== time) : [...pollSelTimes, time])}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${selected ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-700'}`}
-                      >
-                        {time} <span className="opacity-60">({voteCount})</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Ride-sharing */}
-                <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">
-                  <Car size={11} className="inline mr-0.5 -mt-0.5" /> Ride Sharing
-                </p>
-                <div className="flex gap-2 mb-3">
-                  <button
-                    onClick={() => setPollNeedsRide(!pollNeedsRide)}
-                    className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${pollNeedsRide ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-700'}`}
-                  >
-                    Need a ride
-                  </button>
-                  <button
-                    onClick={() => setPollCanOffer(!pollCanOffer)}
-                    className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${pollCanOffer ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-700'}`}
-                  >
-                    Can offer ride
-                  </button>
-                </div>
-
-                {/* Vote button */}
-                <button
-                  onClick={() => onVote(poll.id)}
-                  disabled={pollSelDates.length === 0 || pollSelTimes.length === 0}
-                  className="w-full py-2 rounded-xl bg-green-700 text-white text-xs font-bold hover:bg-green-800 transition-colors disabled:opacity-40"
-                >
-                  {myVote ? 'Update Vote' : 'Submit Vote'}
-                </button>
-
-                {/* Existing votes summary */}
-                {poll.votes.length > 0 && (
-                  <div className="mt-3 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-semibold text-gray-500 uppercase">Votes ({poll.votes.length})</p>
-                      {poll.votes.length > 0 && (
-                        <div className="flex gap-1.5">
-                          <button onClick={() => onGroupChat(poll.votes.map(v => v.userId), poll.weekendDate, poll.timeOptions[0])} className="flex items-center gap-0.5 text-[9px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-2 py-1 hover:bg-green-100 transition-colors">
-                            <MessageCircle size={11} /> Group Chat
-                          </button>
-                          <button onClick={() => onGroupCall(group.memberIds)} className="flex items-center gap-0.5 text-[9px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1 hover:bg-blue-100 transition-colors">
-                            <Phone size={11} /> Group Call
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    {poll.votes.map(vote => {
-                      const voter = getUserById(vote.userId);
-                      return (
-                        <div key={vote.userId} className="flex items-center gap-2 bg-white rounded-lg px-2 py-1.5">
-                          <Avatar firstName={voter?.firstName || '?'} lastName={voter?.lastName || '?'} profilePicture={voter?.profilePicture} size="xs" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-800">{voter?.firstName}</p>
-                            <p className="text-[10px] text-gray-500 truncate">
-                              {vote.selectedDates.map(d => formatDate(d)).join(', ')} · {vote.selectedTimes.join(', ')}
-                            </p>
-                          </div>
-                          <div className="flex gap-1 shrink-0">
-                            {vote.needsRide && <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">Needs ride</span>}
-                            {vote.canOfferRide && <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-medium">Can drive</span>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold">{dayLabel} {formatDate(date)}</span>
+                {availCount > 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'
+                  }`}>
+                    {availCount}
+                  </span>
                 )}
               </div>
-            );
-          })}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Show availability results for selected date */}
+      {selectedDate && (
+        <div className="animate-fade-in">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold text-gray-900">
+              {formatDate(selectedDate)} — {availableCount} of {membersForDate.length} available
+            </p>
+          </div>
+
+          {membersForDate.length === 0 ? (
+            <p className="text-xs text-gray-400 text-center py-3">No members in this group</p>
+          ) : (
+            <div className="space-y-1.5">
+              {/* Available members first, then unavailable */}
+              {membersForDate
+                .sort((a, b) => (b.isAvailable ? 1 : 0) - (a.isAvailable ? 1 : 0))
+                .map(({ user, avail, isAvailable, times }) => (
+                <div
+                  key={user!.id}
+                  className={`flex items-center gap-2 rounded-xl px-3 py-2 ${
+                    isAvailable ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-100 opacity-60'
+                  }`}
+                >
+                  <Avatar firstName={user!.firstName} lastName={user!.lastName} profilePicture={user!.profilePicture} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs font-semibold text-gray-900">{user!.firstName} {user!.lastName}</p>
+                      {isAvailable ? (
+                        <span className="text-[9px] font-bold bg-green-600 text-white px-1.5 py-0.5 rounded-full">Available</span>
+                      ) : (
+                        <span className="text-[9px] font-bold bg-gray-300 text-gray-600 px-1.5 py-0.5 rounded-full">Not set</span>
+                      )}
+                    </div>
+                    {isAvailable && times.length > 0 && (
+                      <p className="text-[10px] text-green-700 mt-0.5">
+                        <Clock size={9} className="inline mr-0.5 -mt-0.5" /> {times.join(', ')}
+                      </p>
+                    )}
+                    {isAvailable && (avail?.needsRide || avail?.canOfferRide) && (
+                      <div className="flex gap-1 mt-0.5">
+                        {avail?.needsRide && <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">Needs ride</span>}
+                        {avail?.canOfferRide && <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-medium">Can drive</span>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {availableCount >= 2 && (
+            <div className="mt-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200">
+              <p className="text-xs font-semibold text-amber-800 text-center">
+                {availableCount >= 4 ? 'Full foursome ready!' : `${availableCount} players ready — find ${4 - availableCount} more!`}
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
