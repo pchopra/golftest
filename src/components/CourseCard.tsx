@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import { Star, MapPin, Flag } from 'lucide-react';
 import type { GolfCourse } from '../data/mockCourses';
-import { getCourseImageUrl } from '../data/courseImages';
+import { useCourseImage } from '../hooks/useCourseImage';
 
 interface Props {
   course: GolfCourse;
@@ -10,7 +9,7 @@ interface Props {
 }
 
 export default function CourseCard({ course, distance, onSelect }: Props) {
-  const [imgError, setImgError] = useState(false);
+  const { imageUrl } = useCourseImage(course.name);
 
   return (
     <div
@@ -18,13 +17,12 @@ export default function CourseCard({ course, distance, onSelect }: Props) {
       className="mx-4 mb-3 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden active:scale-[0.98] transition-transform cursor-pointer"
     >
       {/* Course banner image with gradient fallback */}
-      <div className={`h-28 relative ${imgError ? `bg-gradient-to-br ${course.imageGradient} flex items-center justify-center` : ''}`}>
-        {!imgError ? (
+      <div className={`h-28 relative bg-gradient-to-br ${course.imageGradient} flex items-center justify-center`}>
+        {imageUrl ? (
           <img
-            src={getCourseImageUrl(course.id)}
+            src={imageUrl}
             alt={course.name}
-            className="w-full h-full object-cover"
-            onError={() => setImgError(true)}
+            className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
           <Flag size={40} className="text-white/30" />
