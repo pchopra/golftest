@@ -150,10 +150,7 @@ export default function Login() {
       setError(err);
       return;
     }
-    setSuccessMsg('Account created successfully! You can now sign in.');
-    setTab('login');
-    setLoginEmail(email.trim());
-    setLoginPassword('');
+    setSuccessMsg('Account created successfully!');
   };
 
   // If already logged in, show profile

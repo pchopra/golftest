@@ -336,6 +336,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     console.log('[GolfBuddy] signUp success, user:', data.user?.id, 'session:', !!data.session);
 
+    // signUp may not return a session (e.g. email confirmation flow).
+    // Sign in immediately to guarantee a valid session for the profile upsert.
+    let activeSession = data.session;
+    if (!activeSession) {
+      const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInErr) {
+        console.error('[GolfBuddy] Auto sign-in after signup failed:', signInErr.message);
+      } else {
+        activeSession = signInData.session;
+      }
+    }
+
+    if (activeSession) {
+      setSession(activeSession);
+    }
+
     // Ensure the profile row exists (DB trigger may not fire in all environments)
     if (data.user) {
       const profileRow = {
@@ -357,11 +373,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('[GolfBuddy] Profile upsert after signup failed:', upsertErr.message);
       }
 
-      // Load the new user's profile + refresh buddy list for this session
-      if (data.session) {
-        setSession(data.session);
-        await loadSupabaseProfile(data.user.id);
-      }
+      await loadSupabaseProfile(data.user.id);
       loadAllBuddies();
     }
 
