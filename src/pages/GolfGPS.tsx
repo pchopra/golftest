@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { mockCourses, type GolfCourse } from "../data/mockCourses";
 import { matchesState } from "../utils/stateNames";
+import { useAuth } from "../context/AuthContext";
+import { getDistanceMiles } from "../utils/distance";
 
 /* ------------------------------------------------------------------ */
 /*  Generate 18 holes of data from a course's par / yardage           */
@@ -81,18 +83,68 @@ function getClubRecommendation(distance: number): { club: string; note: string }
 /*  Course Search Screen                                               */
 /* ================================================================== */
 function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void }) {
+  const { currentUser } = useAuth();
   const [query, setQuery] = useState("");
+
+  // Extract state abbreviation from user address (e.g. "123 Main St, City, VA 20171")
+  const userState = useMemo(() => {
+    if (!currentUser?.address) return null;
+    const match = currentUser.address.match(/\b([A-Z]{2})\b/);
+    return match ? match[1] : null;
+  }, [currentUser]);
+
+  const userLat = currentUser?.lat;
+  const userLng = currentUser?.lng;
+
+  const coursesWithDistance = useMemo(() => {
+    return mockCourses.map((course) => {
+      const distance =
+        userLat && userLng
+          ? getDistanceMiles(userLat, userLng, course.lat, course.lng)
+          : null;
+      return { course, distance };
+    });
+  }, [userLat, userLng]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return mockCourses;
-    return mockCourses.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.city.toLowerCase().includes(q) ||
-        matchesState(c.state, q)
-    );
-  }, [query]);
+
+    let results: { course: GolfCourse; distance: number | null }[];
+
+    if (q) {
+      // Search mode — match across all courses
+      results = coursesWithDistance.filter(
+        ({ course: c }) =>
+          c.name.toLowerCase().includes(q) ||
+          c.city.toLowerCase().includes(q) ||
+          matchesState(c.state, q)
+      );
+    } else if (userState) {
+      // Default: show courses in the user's state
+      results = coursesWithDistance.filter(
+        ({ course: c }) => c.state === userState
+      );
+      // If no courses in user's state, show nearest courses instead
+      if (results.length === 0 && userLat && userLng) {
+        results = [...coursesWithDistance]
+          .sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999))
+          .slice(0, 10);
+      }
+    } else {
+      results = coursesWithDistance;
+    }
+
+    // Sort by distance when available
+    if (userLat && userLng) {
+      results.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999));
+    }
+
+    return results;
+  }, [query, coursesWithDistance, userState, userLat, userLng]);
+
+  const locationLabel = userState
+    ? `Showing courses near your profile location (${userState})`
+    : "Select a course to begin";
 
   return (
     <div className="min-h-screen bg-golf-950 pb-24">
@@ -102,7 +154,7 @@ function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void })
           <Crosshair className="h-7 w-7 text-white" />
           <div>
             <h1 className="text-2xl font-bold text-white">Golf GPS</h1>
-            <p className="text-sm text-golf-200">Select a course to begin</p>
+            <p className="text-sm text-golf-200">{locationLabel}</p>
           </div>
         </div>
 
@@ -131,7 +183,7 @@ function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void })
           </div>
         )}
 
-        {filtered.map((course) => (
+        {filtered.map(({ course, distance }) => (
           <button
             key={course.id}
             onClick={() => onSelect(course)}
@@ -146,6 +198,7 @@ function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void })
                   <MapPin size={12} className="text-golf-400 shrink-0" />
                   <span className="text-xs text-golf-400">
                     {course.city}, {course.state}
+                    {distance !== null && ` · ${distance} mi`}
                   </span>
                 </div>
               </div>
