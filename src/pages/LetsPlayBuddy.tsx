@@ -12,11 +12,66 @@ import {
   ChevronRight, Plus, Check, Star, ArrowLeft, Sparkles,
   UserCheck, Users2, Filter, Flame, BarChart3, Car, Eye, Phone,
   Settings, Trash2, LogOut, Shield, UserPlus, UserMinus, X,
-  Search, ExternalLink, Mic, Globe,
+  Search, ExternalLink, Mic, Globe, Bell,
 } from 'lucide-react';
 
 type MainTab = 'buddies' | 'chat';
 type AvailFilter = 'all' | 'two' | 'four' | 'moreThanTwo';
+
+/** Parse "9:30 AM" style time string into hours and minutes (24h). */
+function parseTimeString(time: string): { hours: number; minutes: number } {
+  const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return { hours: 9, minutes: 0 };
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const ampm = match[3].toUpperCase();
+  if (ampm === 'PM' && hours !== 12) hours += 12;
+  if (ampm === 'AM' && hours === 12) hours = 0;
+  return { hours, minutes };
+}
+
+/** Generate and download an .ics calendar file with a 30-min reminder. */
+function downloadTeeTimeReminder(groupName: string, teeDate: string, teeTime: string) {
+  const { hours, minutes } = parseTimeString(teeTime);
+  const start = new Date(`${teeDate}T00:00:00`);
+  start.setHours(hours, minutes, 0, 0);
+  const end = new Date(start.getTime() + 4 * 60 * 60 * 1000); // 4-hour block
+
+  const fmt = (d: Date) =>
+    d.getFullYear().toString() +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    String(d.getDate()).padStart(2, '0') +
+    'T' +
+    String(d.getHours()).padStart(2, '0') +
+    String(d.getMinutes()).padStart(2, '0') +
+    '00';
+
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//GolfBuddy//TeeTime//EN',
+    'BEGIN:VEVENT',
+    `DTSTART:${fmt(start)}`,
+    `DTEND:${fmt(end)}`,
+    `SUMMARY:${groupName} - Tee Time`,
+    `DESCRIPTION:Tee time with ${groupName} at ${teeTime}`,
+    'BEGIN:VALARM',
+    'TRIGGER:-PT30M',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Tee time in 30 minutes!',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tee-time-${teeDate}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function LetsPlayBuddy() {
   const { currentUser, allUsers, availability, chatGroups, weekendPolls, loading, setMyAvailability, getMyAvailability, createChatGroup, deleteGroup, addGroupMember, removeGroupMember, makeGroupAdmin, leaveGroup, sendMessage, createWeekendPoll, voteOnPoll, getUnreadMessageCount, markGroupRead } = useAuth();
@@ -724,6 +779,15 @@ export default function LetsPlayBuddy() {
                     <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-golf-700 bg-golf-50 border border-golf-200 rounded px-1.5 py-0.5">
                       <Clock size={10} /> {group.teeTime}
                     </span>
+                  )}
+                  {group.teeDate && group.teeTime && (
+                    <button
+                      onClick={() => downloadTeeTimeReminder(group.name, group.teeDate!, group.teeTime!)}
+                      className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 hover:bg-amber-100 active:scale-95 transition-all"
+                      title="Set 30-min reminder"
+                    >
+                      <Bell size={10} /> Remind Me
+                    </button>
                   )}
                 </div>
               )}
