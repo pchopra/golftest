@@ -253,7 +253,6 @@ export default function LetsPlayBuddy() {
   };
 
   const handleSaveAvailability = () => {
-    if (selDates.length === 0 || selTimes.length === 0 || !prefCourse) return;
     setMyAvailability({
       availableDates: selDates,
       availableTimes: selTimes,
@@ -620,10 +619,9 @@ export default function LetsPlayBuddy() {
 
           <button
             onClick={handleSaveAvailability}
-            disabled={selDates.length === 0 || selTimes.length === 0 || !prefCourse}
-            className="w-full py-3 rounded-xl bg-golf-700 text-white font-semibold text-sm hover:bg-golf-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full py-3 rounded-xl bg-golf-700 text-white font-semibold text-sm hover:bg-golf-800 transition-colors"
           >
-            Save Availability
+            {selDates.length === 0 && selTimes.length === 0 && !prefCourse ? 'Clear Availability' : 'Save Availability'}
           </button>
         </div>
       </div>
