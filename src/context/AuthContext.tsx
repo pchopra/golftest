@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import type { User, BuddyAvailability, ChatGroup, ChatMessage, WeekendPoll, PollVote, AppNotification } from '../data/mockUsers';
 import { mockUsers, mockAvailability, mockChatGroups, mockWeekendPolls } from '../data/mockUsers';
 import { Storage } from '../utils/storage';
@@ -111,6 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stored = Storage.getSync(STORAGE_KEYS.groupReadState);
     return stored ? JSON.parse(stored) : {};
   });
+
+  // Track whether Supabase has loaded fresh data so async hydration doesn't overwrite it
+  const supabaseLoadedRef = useRef(false);
 
   const addNotification = useCallback((n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {
     const notif: AppNotification = {
@@ -279,6 +282,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return [...kept, ...supaAvail];
         });
       }
+      supabaseLoadedRef.current = true;
     } catch (err) {
       console.error('[GolfBuddy] Failed to load buddies from Supabase:', err);
     }
@@ -318,9 +322,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         Storage.get(STORAGE_KEYS.weekendPolls),
       ]);
       if (user && !session) setCurrentUser(JSON.parse(user));
-      // Only hydrate from cache when there's no active session;
-      // otherwise fresh Supabase data (loaded via loadAllBuddies) takes precedence.
-      if (!session) {
+      // Only hydrate users/availability from cache if Supabase hasn't already loaded fresh data
+      if (!supabaseLoadedRef.current) {
         if (users) setAllUsers(JSON.parse(users));
         if (avail) setAvailability(JSON.parse(avail));
       }
@@ -369,6 +372,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) return { error: error.message };
       if (data.user) {
         await loadSupabaseProfile(data.user.id);
+        loadAllBuddies();
       }
       return { error: null };
     } catch (e) {

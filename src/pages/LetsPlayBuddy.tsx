@@ -546,7 +546,7 @@ export default function LetsPlayBuddy() {
               {filteredCourseList.map(c => (
                 <button
                   key={c.id}
-                  onClick={() => setPrefCourse(c.id)}
+                  onClick={() => setPrefCourse(prev => prev === c.id ? '' : c.id)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all ${
                     prefCourse === c.id
                       ? 'border-golf-600 bg-golf-50'
@@ -566,7 +566,7 @@ export default function LetsPlayBuddy() {
                 const isSelected = prefCourse === customId;
                 return (
                   <div
-                    onClick={() => setPrefCourse(customId)}
+                    onClick={() => setPrefCourse(prev => prev === customId ? '' : customId)}
                     className={`bg-white rounded-2xl shadow-sm border overflow-hidden cursor-pointer transition-all ${
                       isSelected ? 'border-golf-600 ring-2 ring-golf-200' : 'border-gray-100'
                     }`}
