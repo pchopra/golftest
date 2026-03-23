@@ -3,6 +3,7 @@ import type { User, BuddyAvailability, ChatGroup, ChatMessage, WeekendPoll, Poll
 import { mockUsers, mockAvailability, mockChatGroups, mockWeekendPolls } from '../data/mockUsers';
 import { Storage } from '../utils/storage';
 import { supabase } from '../lib/supabase';
+import { showToast } from '../components/Toast';
 import type { Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -37,6 +38,8 @@ interface AuthContextType {
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   clearNotifications: () => void;
+  getUnreadMessageCount: (groupId: string) => number;
+  markGroupRead: (groupId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -48,6 +51,7 @@ const STORAGE_KEYS = {
   chatGroups: 'golf-chat-groups',
   weekendPolls: 'golf-weekend-polls',
   notifications: 'golf-notifications',
+  groupReadState: 'golf-group-read-state',
 };
 
 // Convert Supabase profile row to app User type
@@ -102,6 +106,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return stored ? JSON.parse(stored) : [];
   });
 
+  // Tracks the number of messages the user has read per group: { groupId: count }
+  const [groupReadState, setGroupReadState] = useState<Record<string, number>>(() => {
+    const stored = Storage.getSync(STORAGE_KEYS.groupReadState);
+    return stored ? JSON.parse(stored) : {};
+  });
+
   const addNotification = useCallback((n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {
     const notif: AppNotification = {
       ...n,
@@ -110,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       read: false,
     };
     setNotifications(prev => [notif, ...prev]);
+    showToast(notif);
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -123,6 +134,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const clearNotifications = () => setNotifications([]);
+
+  const getUnreadMessageCount = useCallback((groupId: string): number => {
+    const group = chatGroups.find(g => g.id === groupId);
+    if (!group) return 0;
+    const readCount = groupReadState[groupId] ?? 0;
+    return Math.max(0, group.messages.length - readCount);
+  }, [chatGroups, groupReadState]);
+
+  const markGroupRead = useCallback((groupId: string) => {
+    const group = chatGroups.find(g => g.id === groupId);
+    if (!group) return;
+    setGroupReadState(prev => ({ ...prev, [groupId]: group.messages.length }));
+  }, [chatGroups]);
 
   // Build a fallback User from Supabase auth session so the app never gets stuck
   const buildFallbackUser = useCallback((userId: string, email: string, meta: Record<string, unknown> = {}): User => ({
@@ -329,6 +353,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     Storage.set(STORAGE_KEYS.notifications, JSON.stringify(notifications));
   }, [notifications]);
+
+  useEffect(() => {
+    Storage.set(STORAGE_KEYS.groupReadState, JSON.stringify(groupReadState));
+  }, [groupReadState]);
 
   // Supabase email+password login
   const loginWithSupabase = async (email: string, password: string): Promise<{ error: string | null }> => {
@@ -731,6 +759,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createChatGroup, deleteGroup, addGroupMember, removeGroupMember, makeGroupAdmin, leaveGroup, sendMessage,
       createWeekendPoll, voteOnPoll, updateProfilePicture, updateProfile,
       notifications, unreadCount, markNotificationRead, markAllNotificationsRead, clearNotifications,
+      getUnreadMessageCount, markGroupRead,
     }}>
       {children}
     </AuthContext.Provider>

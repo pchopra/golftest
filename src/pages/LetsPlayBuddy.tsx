@@ -19,7 +19,7 @@ type MainTab = 'buddies' | 'chat';
 type AvailFilter = 'all' | 'two' | 'four' | 'moreThanTwo';
 
 export default function LetsPlayBuddy() {
-  const { currentUser, allUsers, availability, chatGroups, weekendPolls, loading, setMyAvailability, getMyAvailability, createChatGroup, deleteGroup, addGroupMember, removeGroupMember, makeGroupAdmin, leaveGroup, sendMessage, createWeekendPoll, voteOnPoll } = useAuth();
+  const { currentUser, allUsers, availability, chatGroups, weekendPolls, loading, setMyAvailability, getMyAvailability, createChatGroup, deleteGroup, addGroupMember, removeGroupMember, makeGroupAdmin, leaveGroup, sendMessage, createWeekendPoll, voteOnPoll, getUnreadMessageCount, markGroupRead } = useAuth();
   const navigate = useNavigate();
 
   const [mainTab, setMainTab] = useState<MainTab>('buddies');
@@ -77,6 +77,11 @@ export default function LetsPlayBuddy() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeGroupId, chatGroups]);
+
+  // Mark group as read when user opens a chat
+  useEffect(() => {
+    if (activeGroupId) markGroupRead(activeGroupId);
+  }, [activeGroupId, chatGroups, markGroupRead]);
 
   // All hooks must be called before any early return (Rules of Hooks)
   // Derive effective lat/lng from user's address zip code (if present), else profile lat/lng
@@ -1087,6 +1092,7 @@ export default function LetsPlayBuddy() {
                   const lastMsg = group.messages[group.messages.length - 1];
                   const lastSender = lastMsg ? getUserById(lastMsg.senderId) : null;
                   const isRevealed = deleteRevealedGroupId === group.id;
+                  const unreadMsgCount = getUnreadMessageCount(group.id);
                   return (
                     <div key={group.id} className="relative overflow-hidden rounded-xl">
                       {/* Delete button behind the card */}
@@ -1127,7 +1133,14 @@ export default function LetsPlayBuddy() {
                         style={{ transition: 'transform 0.2s ease-out' }}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <h3 className="text-sm font-bold text-white">{group.name}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-bold text-white">{group.name}</h3>
+                            {unreadMsgCount > 0 && (
+                              <span className="min-w-[20px] h-5 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1.5">
+                                {unreadMsgCount > 99 ? '99+' : unreadMsgCount}
+                              </span>
+                            )}
+                          </div>
                           <ChevronRight size={16} className="text-green-200" />
                         </div>
                         <p className="text-xs text-green-100 mb-1.5">
