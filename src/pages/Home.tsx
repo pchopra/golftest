@@ -144,7 +144,7 @@ const defaultFeatures: Feature[] = [
   {
     id: "buddy",
     title: "Let's Play Buddy",
-    description: "Find partners & schedule rounds",
+    description: "Your golf social network — connect, match & tee off",
     icon: Users,
     route: "/buddy",
     image: cardImages.green,
