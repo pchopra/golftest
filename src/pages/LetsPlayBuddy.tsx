@@ -271,7 +271,7 @@ export default function LetsPlayBuddy() {
     const avail = availability.find(a => a.userId === user.id);
     const dist = getDistanceMiles(currentUser.lat, currentUser.lng, user.lat, user.lng);
     return { user, avail, distance: dist };
-  }).filter(b => b.avail).sort((a, b) => a.distance - b.distance);
+  }).sort((a, b) => a.distance - b.distance);
 
   // Hot deals near user – 50-mile radius from profile zip code, valid today
   const DEAL_RADIUS_MILES = 50;
