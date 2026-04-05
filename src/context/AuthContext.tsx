@@ -447,6 +447,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('[GolfBuddy] Profile upsert after signup failed:', upsertErr.message);
       }
 
+      // Create a default buddy_availability row so the new user appears in buddy lists
+      const { error: availErr } = await supabase
+        .from('buddy_availability')
+        .upsert({
+          user_id: data.user.id,
+          available_dates: [],
+          available_times: [],
+          preferred_course_id: '',
+          alternate_course_ids: [],
+          needs_ride: false,
+          can_offer_ride: false,
+          ride_note: '',
+          is_free_now: false,
+          free_now_until: null,
+        }, { onConflict: 'user_id' });
+      if (availErr) {
+        console.error('[GolfBuddy] Default availability insert after signup failed:', availErr.message);
+      }
+
       await loadSupabaseProfile(data.user.id);
       loadAllBuddies();
     }

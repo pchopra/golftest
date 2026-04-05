@@ -284,12 +284,12 @@ export default function LetsPlayBuddy() {
 
   // Filter by availability count
   const getFilteredBuddies = (filter: AvailFilter) => {
-    const withAvail = buddiesWithAvail.filter(b => b.avail && b.avail.availableDates.length > 0);
+    const withDates = buddiesWithAvail.filter(b => b.avail && b.avail.availableDates.length > 0);
     switch (filter) {
-      case 'two': return withAvail.filter((_b, _i, arr) => arr.length >= 2).slice(0, 2);
-      case 'four': return withAvail.filter((_b, _i, arr) => arr.length >= 4).slice(0, 4);
-      case 'moreThanTwo': return withAvail.filter((_b, _i, arr) => arr.length > 2);
-      default: return withAvail;
+      case 'two': return withDates.filter((_b, _i, arr) => arr.length >= 2).slice(0, 2);
+      case 'four': return withDates.filter((_b, _i, arr) => arr.length >= 4).slice(0, 4);
+      case 'moreThanTwo': return withDates.filter((_b, _i, arr) => arr.length > 2);
+      default: return buddiesWithAvail;
     }
   };
 
