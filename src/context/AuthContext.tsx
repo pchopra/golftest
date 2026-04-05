@@ -294,9 +294,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       if (s?.user) {
         try { await loadSupabaseProfile(s.user.id); } catch (e) { console.error('[GolfBuddy] getSession profile load failed:', e); }
-        // Fetch all profiles + availability so buddy list is up to date
-        loadAllBuddies();
       }
+      // Always fetch all profiles + availability so buddy list includes Supabase users
+      loadAllBuddies();
       setLoading(false);
     }).catch(() => setLoading(false));
 
