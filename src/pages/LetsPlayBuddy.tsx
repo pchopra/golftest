@@ -74,8 +74,11 @@ function downloadTeeTimeReminder(groupName: string, teeDate: string, teeTime: st
 }
 
 export default function LetsPlayBuddy() {
-  const { currentUser, allUsers, availability, chatGroups, weekendPolls, loading, setMyAvailability, getMyAvailability, createChatGroup, deleteGroup, addGroupMember, removeGroupMember, makeGroupAdmin, leaveGroup, sendMessage, createWeekendPoll, voteOnPoll, getUnreadMessageCount, markGroupRead } = useAuth();
+  const { currentUser, allUsers, availability, chatGroups, weekendPolls, loading, setMyAvailability, getMyAvailability, createChatGroup, deleteGroup, addGroupMember, removeGroupMember, makeGroupAdmin, leaveGroup, sendMessage, createWeekendPoll, voteOnPoll, getUnreadMessageCount, markGroupRead, refreshBuddies } = useAuth();
   const navigate = useNavigate();
+
+  // Always fetch fresh profiles from Supabase when visiting the buddy page
+  useEffect(() => { refreshBuddies(); }, [refreshBuddies]);
 
   const [mainTab, setMainTab] = useState<MainTab>('buddies');
   const [availFilter, setAvailFilter] = useState<AvailFilter>('all');

@@ -40,6 +40,7 @@ interface AuthContextType {
   clearNotifications: () => void;
   getUnreadMessageCount: (groupId: string) => number;
   markGroupRead: (groupId: string) => void;
+  refreshBuddies: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -372,7 +373,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) return { error: error.message };
       if (data.user) {
         await loadSupabaseProfile(data.user.id);
-        loadAllBuddies();
+        await loadAllBuddies();
       }
       return { error: null };
     } catch (e) {
@@ -787,6 +788,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createWeekendPoll, voteOnPoll, updateProfilePicture, updateProfile,
       notifications, unreadCount, markNotificationRead, markAllNotificationsRead, clearNotifications,
       getUnreadMessageCount, markGroupRead,
+      refreshBuddies: loadAllBuddies,
     }}>
       {children}
     </AuthContext.Provider>
