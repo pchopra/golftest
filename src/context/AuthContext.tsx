@@ -246,13 +246,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [buildFallbackUser]);
 
-  // Fetch all profiles + availability from Supabase so other users' buddies are visible
+  // Fetch all profiles + availability from Supabase so other users' buddies are visible.
+  // Uses RPC functions (security definer) first to bypass RLS, then falls back to direct queries.
   const loadAllBuddies = useCallback(async () => {
     try {
-      const [{ data: profiles }, { data: availRows }] = await Promise.all([
-        supabase.from('profiles').select('*'),
-        supabase.from('buddy_availability').select('*'),
+      // Try RPC functions first — they use SECURITY DEFINER so they bypass RLS.
+      // Fall back to direct table queries if the RPC functions don't exist yet.
+      const [rpcProfiles, rpcAvail] = await Promise.all([
+        supabase.rpc('get_all_profiles'),
+        supabase.rpc('get_all_availability'),
       ]);
+
+      let profiles = rpcProfiles.data;
+      let availRows = rpcAvail.data;
+
+      // If RPC failed (function doesn't exist), fall back to direct query
+      if (rpcProfiles.error || !profiles) {
+        console.warn('[GolfBuddy] RPC get_all_profiles failed, falling back to direct query:', rpcProfiles.error?.message);
+        const directProfiles = await supabase.from('profiles').select('*');
+        if (directProfiles.error) {
+          console.error('[GolfBuddy] Profiles direct query error:', directProfiles.error.message);
+        }
+        profiles = directProfiles.data;
+      }
+
+      if (rpcAvail.error || !availRows) {
+        console.warn('[GolfBuddy] RPC get_all_availability failed, falling back to direct query:', rpcAvail.error?.message);
+        const directAvail = await supabase.from('buddy_availability').select('*');
+        if (directAvail.error) {
+          console.error('[GolfBuddy] Availability direct query error:', directAvail.error.message);
+        }
+        availRows = directAvail.data;
+      }
 
       if (profiles && profiles.length > 0) {
         const supaUsers = profiles.map((p: Record<string, unknown>) => profileToUser(p));
@@ -296,8 +321,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (s?.user) {
         try { await loadSupabaseProfile(s.user.id); } catch (e) { console.error('[GolfBuddy] getSession profile load failed:', e); }
       }
-      // Always fetch all profiles + availability so buddy list includes Supabase users
-      loadAllBuddies();
+      // Always fetch all profiles + availability so buddy list includes Supabase users.
+      // Await so loading stays true until data is ready — prevents rendering stale cache.
+      await loadAllBuddies();
       setLoading(false);
     }).catch(() => setLoading(false));
 

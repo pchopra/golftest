@@ -168,6 +168,31 @@ create index if not exists idx_polls_group on weekend_polls(group_id);
 create index if not exists idx_votes_poll on poll_votes(poll_id);
 
 -- ============================================
+-- RPC functions (security definer to bypass RLS)
+-- ============================================
+
+-- Returns all profiles regardless of RLS configuration.
+-- Used by the client to populate the buddy list.
+create or replace function get_all_profiles()
+returns setof profiles
+language sql
+security definer
+set search_path = public
+as $$
+  select * from profiles;
+$$;
+
+-- Returns all buddy availability rows regardless of RLS configuration.
+create or replace function get_all_availability()
+returns setof buddy_availability
+language sql
+security definer
+set search_path = public
+as $$
+  select * from buddy_availability;
+$$;
+
+-- ============================================
 -- Enable Realtime for chat messages
 -- ============================================
 
