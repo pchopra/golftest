@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://mertjlxtogimsrjttqrf.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lcnRqbHh0b2dpbXNyanR0cXJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MDM0ODcsImV4cCI6MjA2ODM3OTQ4N30.sNzXMu_q645mlSi7nPQmEwV_vLyuUvKRBrx42xfs-7k';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://qdgyeuwxjlbitkssvgpj.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkZ3lldXd4amxiaXRrc3N2Z3BqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMTY3ODUsImV4cCI6MjA4OTY5Mjc4NX0.ucykmBJXJvcBEFnMbD-Y85wb_sfriYIUhdc3mB2kQtg';
 
 if (!supabaseAnonKey) {
   console.error(
