@@ -247,46 +247,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [buildFallbackUser]);
 
   // Fetch all profiles + availability from Supabase so other users' buddies are visible.
-  // Uses RPC functions (security definer) first to bypass RLS, then falls back to direct queries.
   const loadAllBuddies = useCallback(async () => {
     try {
-      // Try RPC functions first — they use SECURITY DEFINER so they bypass RLS.
-      // Fall back to direct table queries if the RPC functions don't exist yet.
-      const [rpcProfiles, rpcAvail] = await Promise.all([
-        supabase.rpc('get_all_profiles'),
-        supabase.rpc('get_all_availability'),
-      ]);
-
+      // Strategy 1: Try RPC functions (SECURITY DEFINER bypasses RLS)
+      const rpcProfiles = await supabase.rpc('get_all_profiles');
       let profiles = rpcProfiles.data;
-      let availRows = rpcAvail.data;
 
-      // If RPC failed (function doesn't exist), fall back to direct query
       if (rpcProfiles.error || !profiles) {
-        console.warn('[GolfBuddy] RPC get_all_profiles failed, falling back to direct query:', rpcProfiles.error?.message);
-        const directProfiles = await supabase.from('profiles').select('*');
-        if (directProfiles.error) {
-          console.error('[GolfBuddy] Profiles direct query error:', directProfiles.error.message);
-        }
-        profiles = directProfiles.data;
+        console.warn('[GolfBuddy] RPC get_all_profiles failed:', rpcProfiles.error?.message);
+        // Strategy 2: Direct table query (works if RLS policy allows it)
+        const directResult = await supabase.from('profiles').select('*');
+        console.log('[GolfBuddy] Direct profiles query:', directResult.data?.length, 'rows, error:', directResult.error?.message);
+        profiles = directResult.data;
+      } else {
+        console.log('[GolfBuddy] RPC get_all_profiles returned', profiles.length, 'profiles');
       }
 
+      // Fetch availability separately (less critical)
+      const rpcAvail = await supabase.rpc('get_all_availability');
+      let availRows = rpcAvail.data;
       if (rpcAvail.error || !availRows) {
-        console.warn('[GolfBuddy] RPC get_all_availability failed, falling back to direct query:', rpcAvail.error?.message);
         const directAvail = await supabase.from('buddy_availability').select('*');
-        if (directAvail.error) {
-          console.error('[GolfBuddy] Availability direct query error:', directAvail.error.message);
-        }
         availRows = directAvail.data;
       }
 
       if (profiles && profiles.length > 0) {
         const supaUsers = profiles.map((p: Record<string, unknown>) => profileToUser(p));
+        console.log('[GolfBuddy] Merging', supaUsers.length, 'Supabase profiles:', supaUsers.map(u => `${u.firstName} ${u.lastName}`));
         setAllUsers(prev => {
-          // Merge: Supabase profiles take precedence, keep mock users that don't collide
           const supaIds = new Set(supaUsers.map((u: User) => u.id));
           const kept = prev.filter(u => !supaIds.has(u.id));
           return [...kept, ...supaUsers];
         });
+      } else {
+        console.warn('[GolfBuddy] No profiles returned from Supabase');
       }
 
       if (availRows && availRows.length > 0) {
