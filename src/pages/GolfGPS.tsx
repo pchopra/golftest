@@ -87,25 +87,32 @@ function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void })
   const { currentUser } = useAuth();
   const [query, setQuery] = useState("");
 
-  // Extract state abbreviation from user address (e.g. "123 Main St, City, VA 20171")
-  const userState = useMemo(() => {
-    if (!currentUser?.address) return null;
-    const match = currentUser.address.match(/\b([A-Z]{2})\b/);
-    return match ? match[1] : null;
+  // Extract state abbreviation and zip code from user address (e.g. "123 Main St, City, VA 20171")
+  const { userState, userZip } = useMemo(() => {
+    if (!currentUser?.address) return { userState: null, userZip: null };
+    const stateMatch = currentUser.address.match(/\b([A-Z]{2})\b/);
+    const zipMatch = currentUser.address.match(/\b(\d{5})\b/);
+    return { userState: stateMatch ? stateMatch[1] : null, userZip: zipMatch ? zipMatch[1] : null };
   }, [currentUser]);
 
-  const userLat = currentUser?.lat;
-  const userLng = currentUser?.lng;
+  // Derive coordinates from address zip code for accurate distance calculation
+  const userCoords = useMemo(() => {
+    if (userZip) {
+      const coords = getCoordinatesForZip(userZip);
+      if (coords) return { lat: coords.lat, lng: coords.lng };
+    }
+    if (currentUser?.lat && currentUser?.lng) return { lat: currentUser.lat, lng: currentUser.lng };
+    return null;
+  }, [userZip, currentUser]);
 
   const coursesWithDistance = useMemo(() => {
     return mockCourses.map((course) => {
-      const distance =
-        userLat && userLng
-          ? getDistanceMiles(userLat, userLng, course.lat, course.lng)
-          : null;
+      const distance = userCoords
+        ? getDistanceMiles(userCoords.lat, userCoords.lng, course.lat, course.lng)
+        : null;
       return { course, distance };
     });
-  }, [userLat, userLng]);
+  }, [userCoords]);
 
   const filtered = useMemo(() => {
     const q = query.trim();
@@ -137,11 +144,11 @@ function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void })
           c.city.toLowerCase().includes(qLower) ||
           matchesState(c.state, qLower)
       );
-      if (userLat && userLng) {
+      if (userCoords) {
         results.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999));
       }
-    } else if (userLat && userLng) {
-      // No search — show nearest courses based on registered address
+    } else if (userCoords) {
+      // No search — show nearest courses based on registered address zip code
       results = [...coursesWithDistance]
         .sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999))
         .slice(0, 15);
@@ -154,10 +161,10 @@ function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void })
     }
 
     return results;
-  }, [query, coursesWithDistance, userState, userLat, userLng]);
+  }, [query, coursesWithDistance, userState, userCoords]);
 
-  const locationLabel = userLat && userLng
-    ? `Nearest courses to your registered address`
+  const locationLabel = userCoords
+    ? `Nearest courses to ${userZip || 'your location'}`
     : userState
     ? `Showing courses in ${userState}`
     : "Select a course to begin";
