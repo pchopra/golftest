@@ -141,8 +141,10 @@ function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void })
     return results;
   }, [query, coursesWithDistance, userState, userLat, userLng]);
 
-  const locationLabel = userState
-    ? `Showing courses near your profile location (${userState})`
+  const locationLabel = userLat && userLng
+    ? `Nearest courses to your registered address`
+    : userState
+    ? `Showing courses in ${userState}`
     : "Select a course to begin";
 
   return (
