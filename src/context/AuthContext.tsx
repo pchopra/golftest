@@ -257,10 +257,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.warn('[GolfBuddy] RPC get_all_profiles failed:', rpcProfiles.error?.message);
         // Strategy 2: Direct table query (works if RLS policy allows it)
         const directResult = await supabase.from('profiles').select('*');
-        console.log('[GolfBuddy] Direct profiles query:', directResult.data?.length, 'rows, error:', directResult.error?.message);
         profiles = directResult.data;
-      } else {
-        console.log('[GolfBuddy] RPC get_all_profiles returned', profiles.length, 'profiles');
       }
 
       // Fetch availability separately (less critical)
@@ -273,14 +270,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (profiles && profiles.length > 0) {
         const supaUsers = profiles.map((p: Record<string, unknown>) => profileToUser(p));
-        console.log('[GolfBuddy] Merging', supaUsers.length, 'Supabase profiles:', supaUsers.map((u: User) => `${u.firstName} ${u.lastName}`));
         setAllUsers(prev => {
           const supaIds = new Set(supaUsers.map((u: User) => u.id));
           const kept = prev.filter(u => !supaIds.has(u.id));
           return [...kept, ...supaUsers];
         });
-      } else {
-        console.warn('[GolfBuddy] No profiles returned from Supabase');
       }
 
       if (availRows && availRows.length > 0) {

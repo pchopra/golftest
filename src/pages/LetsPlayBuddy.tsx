@@ -1239,7 +1239,6 @@ export default function LetsPlayBuddy() {
           </div>
 
           {/* Results */}
-          <p className="text-[10px] text-gray-400 mb-1">Debug: {allUsers.length} total users, {otherUsers.length} other, {filteredBuddies.length} filtered: [{filteredBuddies.map(b => b.user.firstName).join(', ')}]</p>
           {filteredBuddies.length > 0 ? (
             <AvailabilityResults
               buddies={filteredBuddies}
