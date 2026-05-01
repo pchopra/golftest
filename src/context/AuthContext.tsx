@@ -273,7 +273,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (profiles && profiles.length > 0) {
         const supaUsers = profiles.map((p: Record<string, unknown>) => profileToUser(p));
-        console.log('[GolfBuddy] Merging', supaUsers.length, 'Supabase profiles:', supaUsers.map(u => `${u.firstName} ${u.lastName}`));
+        console.log('[GolfBuddy] Merging', supaUsers.length, 'Supabase profiles:', supaUsers.map((u: User) => `${u.firstName} ${u.lastName}`));
         setAllUsers(prev => {
           const supaIds = new Set(supaUsers.map((u: User) => u.id));
           const kept = prev.filter(u => !supaIds.has(u.id));
