@@ -87,12 +87,14 @@ function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void })
   const { currentUser } = useAuth();
   const [query, setQuery] = useState("");
 
-  // Extract state abbreviation and zip code from user address (e.g. "123 Main St, City, VA 20171")
+  // Extract state abbreviation and zip code from user address (e.g. "26141 Main St, City, VA 20152")
   const { userState, userZip } = useMemo(() => {
     if (!currentUser?.address) return { userState: null, userZip: null };
     const stateMatch = currentUser.address.match(/\b([A-Z]{2})\b/);
-    const zipMatch = currentUser.address.match(/\b(\d{5})\b/);
-    return { userState: stateMatch ? stateMatch[1] : null, userZip: zipMatch ? zipMatch[1] : null };
+    // Use the LAST 5-digit number in the address — that's the zip code, not the street number
+    const allZips = currentUser.address.match(/\b\d{5}\b/g);
+    const zip = allZips ? allZips[allZips.length - 1] : null;
+    return { userState: stateMatch ? stateMatch[1] : null, userZip: zip };
   }, [currentUser]);
 
   // Derive coordinates from address zip code for accurate distance calculation
