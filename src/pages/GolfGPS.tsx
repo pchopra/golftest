@@ -119,17 +119,16 @@ function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void })
           c.city.toLowerCase().includes(q) ||
           matchesState(c.state, q)
       );
+    } else if (userLat && userLng) {
+      // Default: show nearest courses based on user's registered zip code
+      results = [...coursesWithDistance]
+        .sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999))
+        .slice(0, 15);
     } else if (userState) {
-      // Default: show courses in the user's state
+      // Fallback when no coordinates: show courses in user's state
       results = coursesWithDistance.filter(
         ({ course: c }) => c.state === userState
       );
-      // If no courses in user's state, show nearest courses instead
-      if (results.length === 0 && userLat && userLng) {
-        results = [...coursesWithDistance]
-          .sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999))
-          .slice(0, 10);
-      }
     } else {
       results = coursesWithDistance;
     }
