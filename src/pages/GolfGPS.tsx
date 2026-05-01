@@ -19,6 +19,7 @@ import { mockCourses, type GolfCourse } from "../data/mockCourses";
 import { matchesState } from "../utils/stateNames";
 import { useAuth } from "../context/AuthContext";
 import { getDistanceMiles } from "../utils/distance";
+import { getCoordinatesForZip } from "../data/zipCoordinates";
 
 /* ------------------------------------------------------------------ */
 /*  Generate 18 holes of data from a course's par / yardage           */
@@ -107,35 +108,49 @@ function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void })
   }, [userLat, userLng]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
+    const qLower = q.toLowerCase();
 
     let results: { course: GolfCourse; distance: number | null }[];
 
-    if (q) {
-      // Search mode — match across all courses
+    // Check if query is a zip code (5 digits)
+    const zipMatch = q.match(/^\d{5}$/);
+
+    if (zipMatch) {
+      // Zip code search — find courses nearest to that zip
+      const zipCoords = getCoordinatesForZip(q);
+      if (zipCoords) {
+        results = mockCourses.map((course) => ({
+          course,
+          distance: getDistanceMiles(zipCoords.lat, zipCoords.lng, course.lat, course.lng),
+        }))
+        .sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999))
+        .slice(0, 15);
+      } else {
+        results = [];
+      }
+    } else if (qLower) {
+      // Text search — match across name, city, state
       results = coursesWithDistance.filter(
         ({ course: c }) =>
-          c.name.toLowerCase().includes(q) ||
-          c.city.toLowerCase().includes(q) ||
-          matchesState(c.state, q)
+          c.name.toLowerCase().includes(qLower) ||
+          c.city.toLowerCase().includes(qLower) ||
+          matchesState(c.state, qLower)
       );
+      if (userLat && userLng) {
+        results.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999));
+      }
     } else if (userLat && userLng) {
-      // Default: show nearest courses based on user's registered zip code
+      // No search — show nearest courses based on registered address
       results = [...coursesWithDistance]
         .sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999))
         .slice(0, 15);
     } else if (userState) {
-      // Fallback when no coordinates: show courses in user's state
       results = coursesWithDistance.filter(
         ({ course: c }) => c.state === userState
       );
     } else {
       results = coursesWithDistance;
-    }
-
-    // Sort by distance when available
-    if (userLat && userLng) {
-      results.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999));
     }
 
     return results;
@@ -167,7 +182,7 @@ function CourseSearchScreen({ onSelect }: { onSelect: (c: GolfCourse) => void })
           />
           <input
             type="text"
-            placeholder="Search courses by name, city, or state..."
+            placeholder="Search by name, city, state, or zip code..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2.5 bg-white/15 text-white placeholder-golf-300 text-sm rounded-xl border border-white/20 focus:outline-none focus:border-white/50 focus:bg-white/20"
