@@ -19,6 +19,7 @@ interface AssistantAction {
 function useVoiceCommand(onResult: (text: string) => void) {
   const [listening, setListening] = useState(false);
   const [error, setError] = useState('');
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const recognitionRef = useRef<any>(null);
   const onResultRef = useRef(onResult);
   onResultRef.current = onResult;
@@ -26,12 +27,24 @@ function useVoiceCommand(onResult: (text: string) => void) {
   const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
   const supported = !!SR;
 
+  const openMicSettings = () => {
+    // Chrome and Chromium-based browsers support this URL
+    try {
+      window.open('chrome://settings/content/microphone', '_blank');
+    } catch {
+      // Fallback: open the site-specific permissions via the page info
+    }
+    // For all browsers: guide users to click the lock/settings icon in the address bar
+    setError('Tap the lock/site icon in your browser address bar → allow Microphone, then reload.');
+  };
+
   const toggle = () => {
     if (!supported) {
       setError('Voice not supported in this browser.');
       return;
     }
     setError('');
+    setPermissionDenied(false);
     if (listening && recognitionRef.current) {
       recognitionRef.current.stop();
       recognitionRef.current = null;
@@ -54,13 +67,14 @@ function useVoiceCommand(onResult: (text: string) => void) {
             onResultRef.current(text);
           };
           recognition.onerror = (e: any) => {
-            const msg =
-              e.error === 'not-allowed'
-                ? 'Microphone access denied. Please allow mic permissions.'
-                : e.error === 'no-speech'
-                  ? 'No speech detected. Tap the mic and try again.'
-                  : `Mic error: ${e.error || 'unknown'}`;
-            setError(msg);
+            if (e.error === 'not-allowed') {
+              setPermissionDenied(true);
+              setError('Microphone blocked.');
+            } else if (e.error === 'no-speech') {
+              setError('No speech detected. Tap the mic and try again.');
+            } else {
+              setError(`Mic error: ${e.error || 'unknown'}`);
+            }
             setListening(false);
           };
           recognition.onend = () => {
@@ -72,13 +86,14 @@ function useVoiceCommand(onResult: (text: string) => void) {
           setListening(true);
         })
         .catch(() => {
-          setError('Microphone access denied. Please allow mic permissions in your browser settings.');
+          setPermissionDenied(true);
+          setError('Microphone blocked.');
           setListening(false);
         });
     }
   };
 
-  return { listening, supported, error, toggle };
+  return { listening, supported, error, permissionDenied, toggle, openMicSettings };
 }
 
 // ─── Text-to-Speech ───
@@ -162,7 +177,7 @@ export default function SeniorAssistant() {
     }, 600);
   };
 
-  const { listening, error: micError, toggle } = useVoiceCommand(handleVoiceResult);
+  const { listening, error: micError, permissionDenied, toggle, openMicSettings } = useVoiceCommand(handleVoiceResult);
   const [textInput, setTextInput] = useState('');
 
   const handleRideRequest = () => {
@@ -332,9 +347,17 @@ export default function SeniorAssistant() {
           </div>
 
           {micError && (
-            <p className="text-center text-yellow-200 text-xs font-medium mb-2">
-              {micError}
-            </p>
+            <div className="text-center mb-2">
+              <p className="text-yellow-200 text-xs font-medium mb-1.5">{micError}</p>
+              {permissionDenied && (
+                <button
+                  onClick={openMicSettings}
+                  className="px-4 py-2 rounded-xl bg-white text-orange-600 text-sm font-bold shadow-md hover:bg-orange-50 active:scale-95 transition-all"
+                >
+                  Open Mic Settings
+                </button>
+              )}
+            </div>
           )}
 
           {/* Text input fallback */}
