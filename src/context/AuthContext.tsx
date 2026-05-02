@@ -309,10 +309,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (s?.user) {
         try { await loadSupabaseProfile(s.user.id); } catch (e) { console.error('[GolfBuddy] getSession profile load failed:', e); }
       }
-      // Always fetch all profiles + availability so buddy list includes Supabase users.
-      // Await so loading stays true until data is ready — prevents rendering stale cache.
-      await loadAllBuddies();
+      // Show the page immediately — don't block on loading all buddies
       setLoading(false);
+      // Fetch all profiles in the background; UI updates when data arrives
+      loadAllBuddies();
     }).catch(() => setLoading(false));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
