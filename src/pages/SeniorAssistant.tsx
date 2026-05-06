@@ -20,6 +20,7 @@ function useVoiceCommand(onResult: (text: string) => void) {
   const [listening, setListening] = useState(false);
   const [error, setError] = useState('');
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [showMicGuide, setShowMicGuide] = useState(false);
   const recognitionRef = useRef<any>(null);
   const onResultRef = useRef(onResult);
   onResultRef.current = onResult;
@@ -27,16 +28,8 @@ function useVoiceCommand(onResult: (text: string) => void) {
   const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
   const supported = !!SR;
 
-  const openMicSettings = () => {
-    // Chrome and Chromium-based browsers support this URL
-    try {
-      window.open('chrome://settings/content/microphone', '_blank');
-    } catch {
-      // Fallback: open the site-specific permissions via the page info
-    }
-    // For all browsers: guide users to click the lock/settings icon in the address bar
-    setError('Tap the lock/site icon in your browser address bar → allow Microphone, then reload.');
-  };
+  const openMicGuide = () => setShowMicGuide(true);
+  const closeMicGuide = () => setShowMicGuide(false);
 
   const toggle = () => {
     if (!supported) {
@@ -93,7 +86,7 @@ function useVoiceCommand(onResult: (text: string) => void) {
     }
   };
 
-  return { listening, supported, error, permissionDenied, toggle, openMicSettings };
+  return { listening, supported, error, permissionDenied, showMicGuide, toggle, openMicGuide, closeMicGuide };
 }
 
 // ─── Text-to-Speech ───
@@ -177,7 +170,7 @@ export default function SeniorAssistant() {
     }, 600);
   };
 
-  const { listening, error: micError, permissionDenied, toggle, openMicSettings } = useVoiceCommand(handleVoiceResult);
+  const { listening, error: micError, permissionDenied, showMicGuide, toggle, openMicGuide, closeMicGuide } = useVoiceCommand(handleVoiceResult);
   const [textInput, setTextInput] = useState('');
 
   const handleRideRequest = () => {
@@ -346,17 +339,55 @@ export default function SeniorAssistant() {
             </button>
           </div>
 
-          {micError && (
+          {micError && !permissionDenied && (
+            <p className="text-center text-yellow-200 text-xs font-medium mb-2">{micError}</p>
+          )}
+          {permissionDenied && !showMicGuide && (
             <div className="text-center mb-2">
-              <p className="text-yellow-200 text-xs font-medium mb-1.5">{micError}</p>
-              {permissionDenied && (
+              <p className="text-yellow-200 text-sm font-bold mb-2">Microphone is blocked</p>
+              <button
+                onClick={openMicGuide}
+                className="px-5 py-3 rounded-xl bg-white text-orange-600 text-base font-bold shadow-lg hover:bg-orange-50 active:scale-95 transition-all"
+              >
+                How to Enable Microphone
+              </button>
+            </div>
+          )}
+          {showMicGuide && (
+            <div className="bg-white rounded-2xl p-5 mb-2 text-left shadow-xl">
+              <h3 className="text-lg font-bold text-gray-900 mb-3">Enable Microphone Access</h3>
+              <div className="space-y-3">
+                <div className="flex gap-3 items-start">
+                  <span className="shrink-0 w-7 h-7 rounded-full bg-orange-500 text-white text-sm font-bold flex items-center justify-center">1</span>
+                  <p className="text-sm text-gray-700 pt-0.5">Look at the <strong>address bar</strong> at the top of your browser</p>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <span className="shrink-0 w-7 h-7 rounded-full bg-orange-500 text-white text-sm font-bold flex items-center justify-center">2</span>
+                  <p className="text-sm text-gray-700 pt-0.5">Tap the <strong>lock icon</strong> or <strong>settings icon</strong> on the left side of the URL</p>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <span className="shrink-0 w-7 h-7 rounded-full bg-orange-500 text-white text-sm font-bold flex items-center justify-center">3</span>
+                  <p className="text-sm text-gray-700 pt-0.5">Find <strong>Microphone</strong> and change it to <strong>Allow</strong></p>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <span className="shrink-0 w-7 h-7 rounded-full bg-orange-500 text-white text-sm font-bold flex items-center justify-center">4</span>
+                  <p className="text-sm text-gray-700 pt-0.5">Tap <strong>Reload</strong> or refresh the page, then try the mic again</p>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-4">
                 <button
-                  onClick={openMicSettings}
-                  className="px-4 py-2 rounded-xl bg-white text-orange-600 text-sm font-bold shadow-md hover:bg-orange-50 active:scale-95 transition-all"
+                  onClick={() => window.location.reload()}
+                  className="flex-1 py-3 rounded-xl bg-orange-500 text-white text-sm font-bold shadow-md hover:bg-orange-600 active:scale-95 transition-all"
                 >
-                  Open Mic Settings
+                  Reload Page
                 </button>
-              )}
+                <button
+                  onClick={closeMicGuide}
+                  className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-bold hover:bg-gray-200 active:scale-95 transition-all"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           )}
 
